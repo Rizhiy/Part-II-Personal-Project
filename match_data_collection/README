@@ -1,0 +1,3 @@
+all_matches folder contains match data, one json file per match. JSON file has data as retrieved from Dota2 API
+match_stats.json contains a bit of filtered data: MatchesX is a list of matches where all players have at least X professional games played.
+While number of games is not an indication of skill, it can be useful for machine learning purposes.
