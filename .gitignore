@@ -3,3 +3,4 @@ all_matches
 
 *.pyc
 *.pyo
+*.pkl
