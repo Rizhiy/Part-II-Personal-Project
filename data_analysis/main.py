@@ -1,21 +1,19 @@
 import os
+import sys
 import numpy as np
-from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
-from data_analysis import Player, Match
+from sklearn import preprocessing
+from data_analysis import Match
 import data_analysis
-import json
 import pickle
 
 # temp fix, not fixing since not gonna use this in the future
 import warnings
 
-USE_SAVED_DATA = True
+USE_SAVED_DATA = False
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
-MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())["matches500"]
 
 classifier_name = 'classifier.pkl'
 dataset_name = 'dataset.pkl'
@@ -26,18 +24,21 @@ else:
     X = []
     y = []
     counter = 0
-    for match_id in MATCH_LIST:
+    for match_id in data_analysis.MATCH_LIST:
         counter += 1
         if (counter % 10 == 0):
-            print(float(counter) / len(MATCH_LIST))
+            print("\rPreparing dataset: " + str(float(counter) / len(data_analysis.MATCH_LIST)), end='')
+            sys.stdout.flush()
         results = Match.generate_feature_set(match_id)
         X.append(results["features"])
         y.append(results["result"])
-
+    print("\rPreparing dataset: Done")
+    # X = np.array(X)
+    # X = preprocessing.scale(X)
     dataset = {'X': X, 'y': y}
 
     with open(dataset_name, 'wb') as output:
         pickle.dump(dataset, output, pickle.HIGHEST_PROTOCOL)
-
-clf = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(100, 100))
-print(np.mean(cross_val_score(clf, dataset['X'], dataset['y'], cv=6)))
+clf = MLPClassifier(solver='lbfgs',
+                    hidden_layer_sizes=(100, 100, 100,))
+print(np.mean(cross_val_score(clf, dataset['X'], dataset['y'], cv=10)))

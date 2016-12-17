@@ -51,10 +51,11 @@ def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match
     deaths = []
     xpm = []
     total_games = 0
+    matches_to_use.sort(reverse=True)
     for match in matches_to_use:
-        if match < min_match_id:
-            continue
         if match > max_match_id:
+            continue
+        if total_games > 40:
             break
         match_data = Match.get_match_data(match)
         for player in match_data["players"]:

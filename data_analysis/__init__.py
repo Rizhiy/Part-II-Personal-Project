@@ -1,7 +1,7 @@
 import json
 from pymongo import MongoClient
 
-GAMES_TO_USE = "matches200"
+GAMES_TO_USE = "matches500"
 MATCH_FOLDER = "../all_matches"
 
 MATCH_LIST = json.loads(open("../match_stats.json",'r').read())[GAMES_TO_USE]
