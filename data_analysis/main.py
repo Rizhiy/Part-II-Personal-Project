@@ -43,4 +43,4 @@ clf.fit(X_train, y_train)
 
 MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())["matches500"]
 
-print(clf.score(X_test, y_test)
+print(clf.score(X_test, y_test))
