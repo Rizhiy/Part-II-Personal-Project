@@ -16,7 +16,9 @@ MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())["matches500"]
 classifier_name = 'classifier.pkl'
 dataset_name = 'dataset.pkl'
 
-if not os.path.isfile(dataset_name):
+if os.path.isfile(dataset_name):
+    dataset = pickle.load(open(dataset_name, 'rb'))
+else:
     X = []
     y = []
     counter = 0
@@ -28,23 +30,21 @@ if not os.path.isfile(dataset_name):
         X.append(results["features"])
         y.append(results["result"])
 
-    dataset = {'X': X, 'Y': y}
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+    dataset = {"X_train": X_train, "X_test": X_test, "y_train": y_train, "y_test": y_test}
+
     with open(dataset_name, 'wb') as output:
         pickle.dump(dataset, output, pickle.HIGHEST_PROTOCOL)
 
-dataset = pickle.load(open(dataset_name, 'rb'))
-
-X_train, X_test, y_train, y_test = train_test_split(dataset['X'], dataset['Y'], test_size=0.1)
-
 if not os.path.isfile(classifier_name):
-    clf = MLPClassifier(solver='lbfgs',hidden_layer_sizes=(100,100))
-    clf.fit(X_train, y_train)
+    clf = pickle.load(open(classifier_name, 'rb'))
+else:
+    clf = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(100, 100))
+    clf.fit(dataset["X_train"], dataset["y_train"])
 
     with open(classifier_name, 'wb') as output:
         pickle.dump(clf, output, pickle.HIGHEST_PROTOCOL)
 
-clf = pickle.load(open(classifier_name, 'rb'))
-
 MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())["matches500"]
 
-print(clf.score(X_test, y_test))
+print(clf.score(dataset["X_test"], dataset["y_test"]))
