@@ -1,5 +1,7 @@
 import os
+import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
 from data_analysis import Player, Match
 import data_analysis
@@ -9,7 +11,7 @@ import pickle
 # temp fix, not fixing since not gonna use this in the future
 import warnings
 
-USE_SAVED_DATA = False
+USE_SAVED_DATA = True
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -37,10 +39,5 @@ else:
     with open(dataset_name, 'wb') as output:
         pickle.dump(dataset, output, pickle.HIGHEST_PROTOCOL)
 
-X_train, X_test, y_train, y_test = train_test_split(dataset['X'], dataset['y'], test_size=0.1)
 clf = MLPClassifier(solver='lbfgs', hidden_layer_sizes=(100, 100))
-clf.fit(X_train, y_train)
-
-MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())["matches500"]
-
-print(clf.score(X_test, y_test))
+print(np.mean(cross_val_score(clf, dataset['X'], dataset['y'], cv=6)))
