@@ -1,2 +1,5 @@
 all_matches
 .idea
+
+*.pyc
+*.pyo
