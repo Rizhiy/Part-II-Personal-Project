@@ -16,3 +16,6 @@ TI_6_LAST_GAME_ID = 2569610900
 
 DB = MongoClient().PersonalProject
 
+MATCHES = {}
+for match_id in MATCH_LIST:
+    MATCHES[match_id] = json.load(open('../all_matches/' + str(match_id) + '.json', 'r'))

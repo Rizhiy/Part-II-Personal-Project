@@ -1,5 +1,6 @@
 import json
 from data_analysis import Player
+import data_analysis
 
 def generate_feature_set(match_id):
     match_data = get_match_data(match_id)
@@ -21,4 +22,4 @@ def generate_feature_set(match_id):
 
 
 def get_match_data(match_id):
-    return json.load(open('../all_matches/' + str(match_id) + '.json', 'r'))
+    return data_analysis.MATCHES[match_id]
