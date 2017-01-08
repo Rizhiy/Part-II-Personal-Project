@@ -16,7 +16,7 @@ from data_analysis import Match, Player
 import data_analysis
 import pickle
 from trueskill import Rating
-from trueskill import rate
+from trueskill import expose
 
 # temp fix, not fixing since not gonna use this in the future
 # import warnings
@@ -57,40 +57,23 @@ from trueskill import rate
 # # regr.fit(X_train,y_train)
 # print(np.mean(cross_val_score(clf, dataset['X'], dataset['y'], cv=10)))
 
-dataset = data_analysis.MATCH_LIST
+dataset = Match.get_random_set(data_analysis.MATCH_LIST)
 
-for idx, match_id in enumerate(dataset):
-    player_ids = Match.get_player_ids(match_id)
-    radiant_ratings = []
-    dire_ratings = []
-    for player_id in player_ids["all_players"]:
-        if (not player_id in data_analysis.PLAYERS):
-            data_analysis.PLAYERS[player_id] = Player.Player(player_id)
-    for player_id in player_ids["radiant_players"]:
-        radiant_ratings.append(data_analysis.PLAYERS[player_id].winrate)
-    for player_id in player_ids["dire_players"]:
-        dire_ratings.append(data_analysis.PLAYERS[player_id].winrate)
-    if Match.get_match_data(match_id)["radiant_win"]:
-        ranks = [1, 0]
-    else:
-        ranks = [0, 1]
-    new_radiant_ratings, new_dire_ratings = rate([radiant_ratings, dire_ratings], ranks=ranks)
-    for idx, player_id in enumerate(player_ids["radiant_players"]):
-        data_analysis.PLAYERS[player_id].winrate = new_radiant_ratings[idx]
-        data_analysis.PLAYERS[player_id].total_games += 1
-    for idx, player_id in enumerate(player_ids["dire_players"]):
-        data_analysis.PLAYERS[player_id].winrate = new_dire_ratings[idx]
-        data_analysis.PLAYERS[player_id].total_games += 1
+for idx, match_id in enumerate(dataset["train_set"]):
+    print("\rRanking players: " + ('%.2f' % (float(idx) / len(dataset["train_set"]))), end='')
+    sys.stdout.flush()
+    Match.update_stats(match_id)
+print("\rRanking players: Done")
 
 players = list(data_analysis.PLAYERS.values())
-players.sort(key=lambda x: x.winrate.mu - 3 * x.winrate.sigma)
+leaderboard = sorted(players, key=lambda x: expose(x.winrate), reverse=True)
 
-# for player in players:
-#     print(player)
+for player in leaderboard:
+    print(player.short_string())
 
-print("DENDI:\t" + str(data_analysis.PLAYERS[data_analysis.DENDI_ID]))
-print("PUPPY:\t" + str(data_analysis.PLAYERS[data_analysis.PUPPEY_ID]))
-print("MISERY:\t" + str(data_analysis.PLAYERS[data_analysis.MISERY_ID]))
-print("RESOLUTION:\t" + str(data_analysis.PLAYERS[data_analysis.RESOLUTION_ID]))
-print("MIRACLE:\t" + str(data_analysis.PLAYERS[data_analysis.MIRACLE_ID]))
-print("S4:\t" + str(data_analysis.PLAYERS[data_analysis.S4_ID]))
+print("\n{:>12}:\n".format("DENDI") + str(data_analysis.PLAYERS[data_analysis.DENDI_ID]))
+print("\n{:>12}:\n".format("PUPPY") + str(data_analysis.PLAYERS[data_analysis.PUPPEY_ID]))
+print("\n{:>12}:\n".format("MISERY") + str(data_analysis.PLAYERS[data_analysis.MISERY_ID]))
+print("\n{:>12}:\n".format("RESOLUTION") + str(data_analysis.PLAYERS[data_analysis.RESOLUTION_ID]))
+print("\n{:>12}:\n".format("MIRACLE") + str(data_analysis.PLAYERS[data_analysis.MIRACLE_ID]))
+print("\n{:>12}:\n".format("S4") + str(data_analysis.PLAYERS[data_analysis.S4_ID]))

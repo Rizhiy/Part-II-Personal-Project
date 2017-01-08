@@ -1,33 +1,45 @@
-import json
 import numpy
 from trueskill import Rating
 
 import data_analysis
 
 from data_analysis import Match
-from data_analysis import VariableRatings
+from data_analysis import StatRatings
+
+from enum import Enum
+
+# TODO: Start working on auto-recognition of stats
+class Stats(Enum):
+    KILLS = "kills"
+    DEATHS = "deaths"
+    ASSISTS = "assists"
+    LEVEL = "level"
+    GPM = "gold_per_min"
+    XPM = "xp_per_min"
+    CREEPS = "last_hits"
+    DENIES = "denies"
+    TOWER_DMG = "tower_damage"
+    HERO_DMG = "hero_damage"
+    HEALING = "hero_healing"
 
 
 class Player:
     def __init__(self, player_id):
         self.player_id = player_id
         self.winrate = Rating()
-        # self.assists = VariableRatings.VariableRatings()
-        # self.kills = VariableRatings.VariableRatings()
-        # self.level = VariableRatings.VariableRatings()
-        # self.gpm = VariableRatings.VariableRatings()
-        # self.denies = VariableRatings.VariableRatings()
-        # self.deaths = VariableRatings.VariableRatings()
-        # self.xpm = VariableRatings.VariableRatings()
+        self.stats = {}
         self.total_games = 0
-        # self.last_match_processed = 0
+        self.last_match_processed = 0
+        for stat in Stats:
+            self.stats[stat] = StatRatings.StatRatings()
 
     def __str__(self):
-        return '%s(%s)' % (type(self).__name__, ', '.join('%s=%s' % item for item in vars(self).items()))
-
-    def get_stats(self):
-        return [self.winrate, self.assists, self.kills, self.level, self.gpm, self.deaths, self.denies, self.xpm,
-                self.total_games]
+        result = self.short_string()
+        stats = []
+        for key, value in self.stats.items():
+            stats.append("{:>12} = {}".format(key.value, str(value.own)))
+        result += "\n".join(stats)
+        return result
 
     def get_all_matches(self):
         match_list = []
@@ -37,6 +49,9 @@ class Player:
                     match_list.append(match_id)
         return match_list
 
+    def short_string(self):
+       return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self.player_id, "winrate", self.winrate,
+                                                            "total games", self.total_games)
 
 def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match_id=0):
     wins = 0
@@ -101,3 +116,10 @@ def weighted_average(value_one, weight_one, value_two, weight_two):
 def get_player_side(player_slot):
     mask = 0b10000000
     return mask & player_slot == 0
+
+
+def get_player_slot_as_int(player_slot):
+    if player_slot < 128:
+        return player_slot
+    else:
+        return player_slot - 123  # - 128 + 5

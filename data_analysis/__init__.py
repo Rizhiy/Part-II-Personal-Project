@@ -1,5 +1,6 @@
 import json
 import trueskill
+import pprint
 from pymongo import MongoClient
 
 GAMES_TO_USE = "matches100"
@@ -27,3 +28,5 @@ for match_id in MATCH_LIST:
 trueskill.setup(draw_probability=0)
 
 PLAYERS = {}
+
+PP = pprint.PrettyPrinter(indent=2)
