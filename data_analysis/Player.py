@@ -1,14 +1,13 @@
+from enum import Enum
+
 import numpy
 from trueskill import Rating
 
 import data_analysis
-
 from data_analysis import Match
 from data_analysis import StatRatings
 
-from enum import Enum
 
-# TODO: Start working on auto-recognition of stats
 class Stats(Enum):
     KILLS = "kills"
     DEATHS = "deaths"
@@ -37,7 +36,7 @@ class Player:
         result = self.short_string()
         stats = []
         for key, value in self.stats.items():
-            stats.append("{:>12} = {}".format(key.value, str(value.own)))
+            stats.append("{:>12} : {}".format(key.value, str(value)))
         result += "\n".join(stats)
         return result
 
@@ -72,7 +71,7 @@ def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match
         match_data = Match.get_match_data(match)
         for player in match_data["players"]:
             if (player["account_id"] == player_id):
-                if match_data["radiant_win"] == get_player_side(player["player_slot"]):
+                if match_data["radiant_win"] == Match.get_player_side(player["player_slot"]):
                     wins += 1
                 assists.append(player["assists"])
                 kills.append(player["kills"])
@@ -112,14 +111,3 @@ def weighted_average(value_one, weight_one, value_two, weight_two):
     return (value_one * weight_one + value_two * weight_two) / (weight_one + weight_two)
 
 
-# returns true if radiant
-def get_player_side(player_slot):
-    mask = 0b10000000
-    return mask & player_slot == 0
-
-
-def get_player_slot_as_int(player_slot):
-    if player_slot < 128:
-        return player_slot
-    else:
-        return player_slot - 123  # - 128 + 5

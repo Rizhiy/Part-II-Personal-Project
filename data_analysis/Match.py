@@ -1,9 +1,10 @@
 import random
-
-from data_analysis import Player
-
+import statistics
 import data_analysis
+from data_analysis import Player
 from trueskill import rate
+
+from data_analysis import StatRatings
 
 
 def generate_feature_set(match_id, player_id=0):
@@ -11,7 +12,7 @@ def generate_feature_set(match_id, player_id=0):
     radiant_players = []
     dire_players = []
     for player in match_data["players"]:
-        if (Player.get_player_side(player["player_slot"])):
+        if (data_analysis.Match.get_player_side(player["player_slot"])):
             radiant_players.append(player["account_id"])
         else:
             dire_players.append(player["account_id"])
@@ -74,7 +75,7 @@ def get_player_ids(match_id):
     all_players = []
     for player in match_data["players"]:
         player_id = player["account_id"]
-        if Player.get_player_side(player["player_slot"]):
+        if data_analysis.Match.get_player_side(player["player_slot"]):
             radiant_players.append(player_id)
         else:
             dire_players.append(player_id)
@@ -96,7 +97,7 @@ def get_match_stats(match_id):
                 player_stat[stat] = player[stat.value]
             except KeyError:
                 player_stat[stat] = None
-        player_stat["slot"] = Player.get_player_slot_as_int(player["player_slot"])
+        player_stat["slot"] = data_analysis.Match.get_player_slot_as_int(player["player_slot"])
         player_stat["id"] = player["account_id"]
         player_stats.append(player_stat)
     return player_stats
@@ -104,6 +105,8 @@ def get_match_stats(match_id):
 
 def update_stats(match_id):
     player_ids = get_player_ids(match_id)
+
+    # winrate rating
     radiant_ratings = []
     dire_ratings = []
     for player_id in player_ids["all_players"]:
@@ -113,8 +116,6 @@ def update_stats(match_id):
         radiant_ratings.append(data_analysis.PLAYERS[player_id].winrate)
     for player_id in player_ids["dire_players"]:
         dire_ratings.append(data_analysis.PLAYERS[player_id].winrate)
-
-    # winrate rating
     if get_match_data(match_id)["radiant_win"]:
         ranks = [0, 1]
     else:
@@ -139,8 +140,41 @@ def update_stats(match_id):
         stats.sort(key=lambda x: x[stat], reverse=reverse)
         ranks = []
         # consider each player individually and get their ranks in each stat/category
-        for j in range(0, 10):
-            ranks.append(next(i for i, v in enumerate(stats) if v["slot"] == j))
+        for i in range(0, 10):
+            ranks.append(next(k for k, v in enumerate(stats) if v["slot"] == i))
+
+        # teams ranks
+        team_ranks = {}
+        radiant_ranks = ranks[0:5]
+        team_ranks[StatRatings.RatingType.HIGHEST] = [1, 0]
+        if min(radiant_ranks) == 0:
+            team_ranks[StatRatings.RatingType.HIGHEST] = [0, 1]
+
+        team_ranks[StatRatings.RatingType.MEDIAN] = [1, 0]
+        if statistics.median(radiant_ranks) < 5:
+            team_ranks[StatRatings.RatingType.MEDIAN] = [0, 1]
+
+        team_ranks[StatRatings.RatingType.LOWEST] = [1, 0]
+        if max(radiant_ranks) != 9:
+            team_ranks[StatRatings.RatingType.LOWEST] = [0, 1]
+
+        # For total we need to get absolute values
+        radiant_total = 0
+        dire_total = 0
+        for player_stats in stats:
+            value = player_stats[stat]
+            if (player_stats["slot"] < 5):
+                radiant_total += value
+            else:
+                dire_total += value
+        team_ranks[StatRatings.RatingType.TOTAL] = [1, 0]
+        if radiant_total > dire_total:
+            team_ranks[StatRatings.RatingType.TOTAL] = [0, 1]
+
+        # swap for deaths, since we rank them in reverse
+        if stat == Player.Stats.DEATHS:
+            for rank in team_ranks:
+                team_ranks[rank].reverse()
 
         ratings = []
         stats.sort(key=lambda x: x["slot"])
@@ -151,7 +185,44 @@ def update_stats(match_id):
         for idx2, rating in enumerate(results):
             data_analysis.PLAYERS[stats[idx2]["id"]].stats[stat].own = rating[0]
 
+        for rating_type in StatRatings.RatingType:
+            radiant = []
+            dire = []
+            for stat_2 in stats:
+                if stat_2["slot"] < 5:
+                    radiant.append((data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type],))
+                else:
+                    dire.append((data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type],))
+
+            radiant_results, dire_results = rate([tuple(radiant_ratings), tuple(dire_ratings)],
+                                                 ranks=team_ranks[rating_type])
+            for stat_2 in stats:
+                if stat_2["slot"] < 5:
+                    data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type] = radiant_results[
+                        stat_2["slot"]]
+                else:
+                    data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type] = dire_results[
+                        stat_2["slot"] - 5]
+
     for player_id in player_ids["all_players"]:
         player = data_analysis.PLAYERS[player_id]
         player.total_games += 1
         player.last_match_processed = match_id
+
+
+def get_player_slot_as_int(player_slot):
+    if player_slot < 128:
+        return player_slot
+    else:
+        return player_slot - 123  # - 128 + 5
+
+
+def get_player_side(player_slot):
+    """
+    :param player_slot:
+    :type player_slot: int
+    :return: Returns true if radiant
+    :rtype: bool
+    """
+    mask = 0b10000000
+    return mask & player_slot == 0
