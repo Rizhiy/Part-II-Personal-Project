@@ -1,8 +1,12 @@
 import random
 import statistics
+import math
+import trueskill
+
 import data_analysis
 from data_analysis import Player
 from trueskill import rate
+from trueskill.backends import cdf
 
 from data_analysis import StatRatings
 
@@ -109,22 +113,19 @@ def update_stats(match_id):
     # winrate rating
     radiant_ratings = []
     dire_ratings = []
-    for player_id in player_ids["all_players"]:
-        if not player_id in data_analysis.PLAYERS:
-            data_analysis.PLAYERS[player_id] = Player.Player(player_id)
     for player_id in player_ids["radiant_players"]:
-        radiant_ratings.append(data_analysis.PLAYERS[player_id].winrate)
+        radiant_ratings.append(Player.get_player(player_id).winrate)
     for player_id in player_ids["dire_players"]:
-        dire_ratings.append(data_analysis.PLAYERS[player_id].winrate)
+        dire_ratings.append(Player.get_player(player_id).winrate)
     if get_match_data(match_id)["radiant_win"]:
         ranks = [0, 1]
     else:
         ranks = [1, 0]
     new_radiant_ratings, new_dire_ratings = rate([tuple(radiant_ratings), tuple(dire_ratings)], ranks=ranks)
     for idx, player_id in enumerate(player_ids["radiant_players"]):
-        data_analysis.PLAYERS[player_id].winrate = new_radiant_ratings[idx]
+        Player.get_player(player_id).winrate = new_radiant_ratings[idx]
     for idx, player_id in enumerate(player_ids["dire_players"]):
-        data_analysis.PLAYERS[player_id].winrate = new_radiant_ratings[idx]
+        Player.get_player(player_id).winrate = new_radiant_ratings[idx]
 
     # other stats
     stats = get_match_stats(match_id)
@@ -179,35 +180,64 @@ def update_stats(match_id):
         ratings = []
         stats.sort(key=lambda x: x["slot"])
         for stat_2 in stats:
-            ratings.append((data_analysis.PLAYERS[stat_2["id"]].stats[stat].own,))
+            ratings.append((Player.get_player(stat_2["id"]).stats[stat].own,))
         results = rate(ratings, ranks=ranks)
         # since new ratings are returned, we need to replace old ones
         for idx2, rating in enumerate(results):
-            data_analysis.PLAYERS[stats[idx2]["id"]].stats[stat].own = rating[0]
+            Player.get_player(stats[idx2]["id"]).stats[stat].own = rating[0]
 
         for rating_type in StatRatings.RatingType:
             radiant = []
             dire = []
             for stat_2 in stats:
                 if stat_2["slot"] < 5:
-                    radiant.append((data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type],))
+                    radiant.append((Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type],))
                 else:
-                    dire.append((data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type],))
+                    dire.append((Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type],))
 
             radiant_results, dire_results = rate([tuple(radiant_ratings), tuple(dire_ratings)],
                                                  ranks=team_ranks[rating_type])
             for stat_2 in stats:
                 if stat_2["slot"] < 5:
-                    data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type] = radiant_results[
+                    Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type] = radiant_results[
                         stat_2["slot"]]
                 else:
-                    data_analysis.PLAYERS[stat_2["id"]].stats[stat].team_ratings[rating_type] = dire_results[
+                    Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type] = dire_results[
                         stat_2["slot"] - 5]
 
     for player_id in player_ids["all_players"]:
-        player = data_analysis.PLAYERS[player_id]
+        player = Player.get_player(player_id)
         player.total_games += 1
         player.last_match_processed = match_id
+
+
+# Take from the first issue on the github of trueskill
+def win_probability(a, b):
+    deltaMu = sum([x.mu for x in a]) - sum([x.mu for x in b])
+    sumSigma = sum([x.sigma ** 2 for x in a]) + sum([x.sigma ** 2 for x in b])
+    playerCount = len(a) + len(b)
+    denominator = math.sqrt(playerCount * (trueskill.BETA * trueskill.BETA) + sumSigma)
+    return cdf(deltaMu / denominator)
+
+
+def predict_outcome(match_id):
+    """
+
+    :param match_id:
+    :type match_id: int
+    :return: Probability that radiant will win
+    :rtype: float
+    """
+    match_data = data_analysis.MATCHES[match_id]
+    radiant_team = []
+    dire_team = []
+    for player in match_data["players"]:
+        rating = Player.get_player(player["account_id"]).winrate
+        if player["player_slot"] < 5:
+            radiant_team.append(rating)
+        else:
+            dire_team.append(rating)
+    return win_probability(radiant_team, dire_team)
 
 
 def get_player_slot_as_int(player_slot):
@@ -226,3 +256,7 @@ def get_player_side(player_slot):
     """
     mask = 0b10000000
     return mask & player_slot == 0
+
+
+def radiant_win(match_id):
+    return data_analysis.MATCHES[match_id]["radiant_win"]

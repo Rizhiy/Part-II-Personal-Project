@@ -49,8 +49,9 @@ class Player:
         return match_list
 
     def short_string(self):
-       return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self.player_id, "winrate", self.winrate,
-                                                            "total games", self.total_games)
+        return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self.player_id, "winrate", self.winrate,
+                                                                "total games", self.total_games)
+
 
 def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match_id=0):
     wins = 0
@@ -111,3 +112,7 @@ def weighted_average(value_one, weight_one, value_two, weight_two):
     return (value_one * weight_one + value_two * weight_two) / (weight_one + weight_two)
 
 
+def get_player(player_id):
+    if not player_id in data_analysis.PLAYERS:
+        data_analysis.PLAYERS[player_id] = Player(player_id)
+    return data_analysis.PLAYERS[player_id]

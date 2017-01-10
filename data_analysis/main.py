@@ -57,23 +57,37 @@ from trueskill import expose
 # # regr.fit(X_train,y_train)
 # print(np.mean(cross_val_score(clf, dataset['X'], dataset['y'], cv=10)))
 
-dataset = Match.get_random_set(data_analysis.MATCH_LIST)
+dataset = Match.get_random_set(data_analysis.MATCH_LIST, selection_ratio=0.9)
 
 for idx, match_id in enumerate(dataset["train_set"]):
-    print("\rRanking players: " + ('%.2f' % (float(idx) / len(dataset["train_set"]))), end='')
+    print("\rRanking players: " + ("{:.2f}".format(float(idx) / len(dataset["train_set"]))), end='')
     sys.stdout.flush()
     Match.update_stats(match_id)
 print("\rRanking players: Done")
 
-players = list(data_analysis.PLAYERS.values())
-leaderboard = sorted(players, key=lambda x: expose(x.winrate), reverse=True)
+error = []
+for idx, match_id in enumerate(dataset["test_set"]):
+    print("\rEvaluating: " + ('%.2f' % (float(idx) / len(dataset["test_set"]))), end='')
+    radiant_probability = Match.predict_outcome(match_id)
+    predicted_outcome = radiant_probability > 0.5
+    if predicted_outcome == Match.radiant_win(match_id):
+        error.append(0.5 - abs(0.5 - predicted_outcome))
+    else:
+        error.append(0.5 + abs(0.5 - predicted_outcome))
+    Match.update_stats(match_id)
+print("\rEvaluating: Done")
 
-for player in leaderboard:
-    print(player.short_string())
+print("Mean Error: {}".format(np.mean(error)))
 
-print("\n{:>12}:\n".format("DENDI") + str(data_analysis.PLAYERS[data_analysis.DENDI_ID]))
-print("\n{:>12}:\n".format("PUPPY") + str(data_analysis.PLAYERS[data_analysis.PUPPEY_ID]))
-print("\n{:>12}:\n".format("MISERY") + str(data_analysis.PLAYERS[data_analysis.MISERY_ID]))
-print("\n{:>12}:\n".format("RESOLUTION") + str(data_analysis.PLAYERS[data_analysis.RESOLUTION_ID]))
-print("\n{:>12}:\n".format("MIRACLE") + str(data_analysis.PLAYERS[data_analysis.MIRACLE_ID]))
-print("\n{:>12}:\n".format("S4") + str(data_analysis.PLAYERS[data_analysis.S4_ID]))
+# players = list(data_analysis.PLAYERS.values())
+# leaderboard = sorted(players, key=lambda x: expose(x.winrate), reverse=True)
+#
+# for player in leaderboard:
+#     print(player.short_string())
+#
+# print("\n{:>12}:\n".format("DENDI") + str(data_analysis.PLAYERS[data_analysis.DENDI_ID]))
+# print("\n{:>12}:\n".format("PUPPY") + str(data_analysis.PLAYERS[data_analysis.PUPPEY_ID]))
+# print("\n{:>12}:\n".format("MISERY") + str(data_analysis.PLAYERS[data_analysis.MISERY_ID]))
+# print("\n{:>12}:\n".format("RESOLUTION") + str(data_analysis.PLAYERS[data_analysis.RESOLUTION_ID]))
+# print("\n{:>12}:\n".format("MIRACLE") + str(data_analysis.PLAYERS[data_analysis.MIRACLE_ID]))
+# print("\n{:>12}:\n".format("S4") + str(data_analysis.PLAYERS[data_analysis.S4_ID]))
