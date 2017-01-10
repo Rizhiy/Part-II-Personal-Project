@@ -48,6 +48,14 @@ class Player:
                     match_list.append(match_id)
         return match_list
 
+    def get_features(self):
+        features = []
+        features += [self.winrate.mu,self.winrate.sigma]
+        for stat in self.stats:
+            stat2 = self.stats[stat]
+            features += [stat2.own.mu,stat2.own.sigma]
+        return features
+
     def short_string(self):
         return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self.player_id, "winrate", self.winrate,
                                                                 "total games", self.total_games)

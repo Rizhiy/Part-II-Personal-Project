@@ -2,7 +2,6 @@ import random
 import statistics
 import math
 import trueskill
-
 import data_analysis
 from data_analysis import Player
 from trueskill import rate
@@ -11,30 +10,22 @@ from trueskill.backends import cdf
 from data_analysis import StatRatings
 
 
-def generate_feature_set(match_id, player_id=0):
+def generate_feature_set(match_id):
     match_data = get_match_data(match_id)
     radiant_players = []
     dire_players = []
     for player in match_data["players"]:
-        if (data_analysis.Match.get_player_side(player["player_slot"])):
+        if (get_player_side(player["player_slot"])):
             radiant_players.append(player["account_id"])
         else:
             dire_players.append(player["account_id"])
-        if player['account_id'] == player_id:
-            desired_player = player
-    players = radiant_players + dire_players
-    if player_id in players:
-        players.remove(player_id)
-        players = [player_id] + players
-    player_objects = []
-    for player in players:
-        player_objects.append(Player.Player(player))
+    players_ids = radiant_players + dire_players
     features = []
-    for player in player_objects:
-        features += player.get_features()
+    for player_id in players_ids:
+        features += Player.get_player(player_id).get_features()
     return {
         "features": features,
-        "target": desired_player['gold_per_min']
+        "target": radiant_win(match_id)
     }
 
 

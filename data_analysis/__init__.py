@@ -3,7 +3,7 @@ import trueskill
 import pprint
 from pymongo import MongoClient
 
-GAMES_TO_USE = "matches200"
+GAMES_TO_USE = "matches100"
 MATCH_FOLDER = "../all_matches"
 
 MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())[GAMES_TO_USE]
