@@ -25,7 +25,7 @@ def generate_feature_set(match_id):
         features += Player.get_player(player_id).get_features()
     return {
         "features": features,
-        "target": radiant_win(match_id)
+        "target": match_data["players"][0]["gold_per_min"]
     }
 
 
@@ -70,7 +70,7 @@ def get_player_ids(match_id):
     all_players = []
     for player in match_data["players"]:
         player_id = player["account_id"]
-        if data_analysis.Match.get_player_side(player["player_slot"]):
+        if get_player_side(player["player_slot"]):
             radiant_players.append(player_id)
         else:
             dire_players.append(player_id)
@@ -92,7 +92,7 @@ def get_match_stats(match_id):
                 player_stat[stat] = player[stat.value]
             except KeyError:
                 player_stat[stat] = None
-        player_stat["slot"] = data_analysis.Match.get_player_slot_as_int(player["player_slot"])
+        player_stat["slot"] = get_player_slot_as_int(player["player_slot"])
         player_stat["id"] = player["account_id"]
         player_stats.append(player_stat)
     return player_stats
@@ -135,39 +135,6 @@ def update_stats(match_id):
         for i in range(0, 10):
             ranks.append(next(k for k, v in enumerate(stats) if v["slot"] == i))
 
-        # teams ranks
-        team_ranks = {}
-        radiant_ranks = ranks[0:5]
-        team_ranks[StatRatings.RatingType.HIGHEST] = [1, 0]
-        if min(radiant_ranks) == 0:
-            team_ranks[StatRatings.RatingType.HIGHEST] = [0, 1]
-
-        team_ranks[StatRatings.RatingType.MEDIAN] = [1, 0]
-        if statistics.median(radiant_ranks) < 5:
-            team_ranks[StatRatings.RatingType.MEDIAN] = [0, 1]
-
-        team_ranks[StatRatings.RatingType.LOWEST] = [1, 0]
-        if max(radiant_ranks) != 9:
-            team_ranks[StatRatings.RatingType.LOWEST] = [0, 1]
-
-        # For total we need to get absolute values
-        radiant_total = 0
-        dire_total = 0
-        for player_stats in stats:
-            value = player_stats[stat]
-            if (player_stats["slot"] < 5):
-                radiant_total += value
-            else:
-                dire_total += value
-        team_ranks[StatRatings.RatingType.TOTAL] = [1, 0]
-        if radiant_total > dire_total:
-            team_ranks[StatRatings.RatingType.TOTAL] = [0, 1]
-
-        # swap for deaths, since we rank them in reverse
-        if stat == Player.Stats.DEATHS:
-            for rank in team_ranks:
-                team_ranks[rank].reverse()
-
         ratings = []
         stats.sort(key=lambda x: x["slot"])
         for stat_2 in stats:
@@ -176,25 +143,6 @@ def update_stats(match_id):
         # since new ratings are returned, we need to replace old ones
         for idx2, rating in enumerate(results):
             Player.get_player(stats[idx2]["id"]).stats[stat].own = rating[0]
-
-        for rating_type in StatRatings.RatingType:
-            radiant = []
-            dire = []
-            for stat_2 in stats:
-                if stat_2["slot"] < 5:
-                    radiant.append((Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type],))
-                else:
-                    dire.append((Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type],))
-
-            radiant_results, dire_results = rate([tuple(radiant_ratings), tuple(dire_ratings)],
-                                                 ranks=team_ranks[rating_type])
-            for stat_2 in stats:
-                if stat_2["slot"] < 5:
-                    Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type] = radiant_results[
-                        stat_2["slot"]]
-                else:
-                    Player.get_player(stat_2["id"]).stats[stat].team_ratings[rating_type] = dire_results[
-                        stat_2["slot"] - 5]
 
     for player_id in player_ids["all_players"]:
         player = Player.get_player(player_id)
