@@ -1,9 +1,10 @@
 import json
 import trueskill
 import pprint
+import warnings
 from pymongo import MongoClient
 
-GAMES_TO_USE = "matches100"
+GAMES_TO_USE = "matches50"
 MATCH_FOLDER = "../all_matches"
 
 MATCH_LIST = json.loads(open("../match_stats.json", 'r').read())[GAMES_TO_USE]
@@ -30,3 +31,8 @@ trueskill.setup(draw_probability=0)
 PLAYERS = {}
 
 PP = pprint.PrettyPrinter(indent=2)
+
+# temp fix, not fixing since not gonna use this in the future
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+print("Initialisation finished")

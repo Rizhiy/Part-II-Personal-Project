@@ -1,13 +1,12 @@
-import random
-import statistics
 import math
+import random
+
 import trueskill
-import data_analysis
-from data_analysis import Player
 from trueskill import rate
 from trueskill.backends import cdf
 
-from data_analysis import StatRatings
+import data_analysis
+from data_analysis import Player
 
 
 def generate_feature_set(match_id):
@@ -25,7 +24,7 @@ def generate_feature_set(match_id):
         features += Player.get_player(player_id).get_features()
     return {
         "features": features,
-        "target": match_data["players"][0]["gold_per_min"]
+        "match_id": match_id
     }
 
 

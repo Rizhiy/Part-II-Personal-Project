@@ -12,14 +12,16 @@ class Stats(Enum):
     KILLS = "kills"
     DEATHS = "deaths"
     ASSISTS = "assists"
+    KDA = "KDA"
     LEVEL = "level"
     GPM = "gold_per_min"
     XPM = "xp_per_min"
     CREEPS = "last_hits"
     DENIES = "denies"
-    TOWER_DMG = "tower_damage"
-    HERO_DMG = "hero_damage"
-    HEALING = "hero_healing"
+    # Those three values are missing from first half of the dataset,
+    # TOWER_DMG = "tower_damage"
+    # HERO_DMG = "hero_damage"
+    # HEALING = "hero_healing"
 
 
 class Player:
@@ -50,10 +52,10 @@ class Player:
 
     def get_features(self):
         features = []
-        features += [self.winrate.mu,self.winrate.sigma]
+        features += [self.winrate.mu, self.winrate.sigma]
         for stat in self.stats:
             stat2 = self.stats[stat]
-            features += [stat2.own.mu,stat2.own.sigma]
+            features += [stat2.own.mu, stat2.own.sigma]
         return features
 
     def short_string(self):
@@ -79,13 +81,13 @@ def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match
             break
         match_data = Match.get_match_data(match)
         for player in match_data["players"]:
-            if (player["account_id"] == player_id):
+            if player["account_id"] == player_id:
                 if match_data["radiant_win"] == Match.get_player_side(player["player_slot"]):
                     wins += 1
                 assists.append(player["assists"])
                 kills.append(player["kills"])
                 level.append(player["level"])
-                gpm.append(player["gold_per_min"])
+                gpm.append(player["gold_6per_min"])
                 denies.append(player["denies"])
                 deaths.append(player["deaths"])
                 xpm.append(player["xp_per_min"])
@@ -121,6 +123,6 @@ def weighted_average(value_one, weight_one, value_two, weight_two):
 
 
 def get_player(player_id):
-    if not player_id in data_analysis.PLAYERS:
+    if player_id not in data_analysis.PLAYERS:
         data_analysis.PLAYERS[player_id] = Player(player_id)
     return data_analysis.PLAYERS[player_id]
