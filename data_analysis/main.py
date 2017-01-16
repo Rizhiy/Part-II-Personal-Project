@@ -23,3 +23,10 @@ for stat in Stats:
     print("{:>7} = {}\n{:>7} = {}\n{:>7} = {}".format("Mean", np.mean(results),
                                                       "Highest", max(results),
                                                       "Lowest", min(results)))
+
+duration_results = Learning.test_duration(regr,dataset)
+print()
+print("Stat: {}".format("Duration"))
+print("{:>7} = {}\n{:>7} = {}\n{:>7} = {}".format("Mean", np.mean(duration_results),
+                                                  "Highest", max(duration_results),
+                                                  "Lowest", min(duration_results)))

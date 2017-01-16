@@ -98,30 +98,40 @@ def get_match_stats(match_id):
 
 
 def update_stats(match_id):
+    match_data = get_match_data(match_id)
     player_ids = get_player_ids(match_id)
 
     # winrate rating
     radiant_ratings = []
     dire_ratings = []
+    players = {}
+    for player_id in player_ids["all_players"]:
+        players[player_id] = {}
+        players[player_id]["stats"] = {}
+        players[player_id]["towers"] = {}
+        players[player_id]["barracks"] = {}
+
     for player_id in player_ids["radiant_players"]:
         radiant_ratings.append(Player.get_player(player_id).winrate)
     for player_id in player_ids["dire_players"]:
         dire_ratings.append(Player.get_player(player_id).winrate)
-    if get_match_data(match_id)["radiant_win"]:
+    if match_data["radiant_win"]:
         ranks = [0, 1]
     else:
         ranks = [1, 0]
     new_radiant_ratings, new_dire_ratings = rate([tuple(radiant_ratings), tuple(dire_ratings)], ranks=ranks)
     for idx, player_id in enumerate(player_ids["radiant_players"]):
-        Player.get_player(player_id).winrate = new_radiant_ratings[idx]
+        players[player_id]["winrate"] = new_radiant_ratings[idx]
     for idx, player_id in enumerate(player_ids["dire_players"]):
-        Player.get_player(player_id).winrate = new_radiant_ratings[idx]
+        players[player_id]["winrate"] = new_dire_ratings[idx]
 
     # other stats
     stats = get_match_stats(match_id)
     for stat in Player.Stats:
         # old match data doesn't have all required stats, so we skip them
         if not stats[0][stat]:
+            for player_id in players:
+                players[player_id]["stats"][stat] = Player.get_player(player_id).stats[stat]
             continue
         # since we are ranking, we want to have them all except deaths in descending order
         if stat == Player.Stats.DEATHS:
@@ -137,16 +147,54 @@ def update_stats(match_id):
         ratings = []
         stats.sort(key=lambda x: x["slot"])
         for stat_2 in stats:
-            ratings.append((Player.get_player(stat_2["id"]).stats[stat].own,))
+            ratings.append((Player.get_player(stat_2["id"]).stats[stat],))
+
         results = rate(ratings, ranks=ranks)
         # since new ratings are returned, we need to replace old ones
         for idx2, rating in enumerate(results):
-            Player.get_player(stats[idx2]["id"]).stats[stat].own = rating[0]
+            players[stats[idx2]["id"]]["stats"][stat] = rating[0]
 
-    for player_id in player_ids["all_players"]:
-        player = Player.get_player(player_id)
-        player.total_games += 1
-        player.last_match_processed = match_id
+    # towers
+    radiant_towers = {}
+    dire_towers = {}
+    for tower in Player.Towers:
+        if tower.value & match_data["tower_status_radiant"]:
+            radiant_towers[tower] = 1
+        else:
+            radiant_towers[tower] = 0
+        if tower.value & match_data["tower_status_dire"]:
+            dire_towers[tower] = 1
+        else:
+            dire_towers[tower] = 0
+
+    # barracks
+    radiant_barracks = {}
+    dire_barracks = {}
+    for barrack in Player.Barracks:
+        if barrack.value & match_data["barracks_status_radiant"]:
+            radiant_barracks[barrack] = 1
+        else:
+            radiant_barracks[barrack] = 0
+        if barrack.value & match_data["barracks_status_dire"]:
+            dire_barracks[barrack] = 1
+        else:
+            dire_barracks[barrack] = 0
+
+    # finally update all stats
+    for player_id in players:
+        if player_id in player_ids["radiant_players"]:
+            towers = radiant_towers
+            barracks = radiant_barracks
+        else:
+            towers = dire_towers
+            barracks = dire_barracks
+        player = players[player_id]
+        Player.get_player(player_id).update(player["winrate"],
+                                            match_id,
+                                            match_data["duration"],
+                                            player["stats"],
+                                            towers,
+                                            barracks)
 
 
 # Take from the first issue on the github of trueskill

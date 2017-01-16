@@ -5,7 +5,6 @@ from trueskill import Rating
 
 import data_analysis
 from data_analysis import Match
-from data_analysis import StatRatings
 
 
 class Stats(Enum):
@@ -24,15 +23,47 @@ class Stats(Enum):
     # HEALING = "hero_healing"
 
 
+class Towers(Enum):
+    ANCIENT_BOTTOM = 0b0000010000000000
+    ANCIENT_TOP = 0b0000001000000000
+    BOTTOM_T3 = 0b0000000100000000
+    BOOTOM_T2 = 0b0000000010000000
+    BOTTOM_T1 = 0b0000000001000000
+    MIDDLE_T3 = 0b0000000000100000
+    MIDDLE_T2 = 0b0000000000010000
+    MIDDLE_T1 = 0b0000000000001000
+    TOP_T3 = 0b0000000000000100
+    TOP_T2 = 0b0000000000000010
+    TOP_T1 = 0b0000000000000001
+
+
+class Barracks(Enum):
+    BOTTOM_RANGED = 0b00100000
+    BOTTOM_MELEE = 0b00010000
+    MIDDLE_RANGED = 0b00001000
+    MIDDLE_MELEE = 0b00000100
+    TOP_RANGED = 0b00000010
+    TOP_MELEE = 0b00000001
+
+
 class Player:
+    alpha = 0.9
+
     def __init__(self, player_id):
-        self.player_id = player_id
+        self._player_id = player_id
         self.winrate = Rating()
-        self.stats = {}
         self.total_games = 0
         self.last_match_processed = 0
+        self.game_length = 0
+        self.stats = {}
         for stat in Stats:
-            self.stats[stat] = StatRatings.StatRatings()
+            self.stats[stat] = Rating()
+        self.towers = {}
+        for tower in Towers:
+            self.towers[tower] = 0
+        self.barracks = {}
+        for barrack in Barracks:
+            self.barracks[barrack] = 0
 
     def __str__(self):
         result = self.short_string()
@@ -46,21 +77,52 @@ class Player:
         match_list = []
         for match_id in data_analysis.MATCH_LIST:
             for player in Match.get_match_data(match_id)["players"]:
-                if self.player_id == player['account_id']:
+                if self._player_id == player['account_id']:
                     match_list.append(match_id)
         return match_list
 
     def get_features(self):
         features = []
-        features += [self.winrate.mu, self.winrate.sigma]
+        features += [self.winrate.mu, self.winrate.sigma,self.total_games,self.game_length]
         for stat in self.stats:
             stat2 = self.stats[stat]
-            features += [stat2.own.mu, stat2.own.sigma]
+            features += [stat2.mu, stat2.sigma]
+        for key, tower in self.towers.items():
+            features.append(tower)
+        for key, barrack in self.barracks.items():
+            features.append(barrack)
         return features
 
+    def get_player_id(self):
+        return self._player_id
+
     def short_string(self):
-        return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self.player_id, "winrate", self.winrate,
+        return "{:>12} = {}\n{:>12} = {}\n{:>12} = {}\n".format("account id", self._player_id,
+                                                                "winrate", self.winrate,
                                                                 "total games", self.total_games)
+
+    def update(self, winrate, match_id, game_length, stats, towers, barracks):
+        self.winrate = winrate
+        self.last_match_processed = match_id
+        self.game_length = exp_average(self.game_length, game_length, Player.alpha)
+        self.stats = stats
+        for tower in Towers:
+            self.towers[tower] = exp_average(self.towers[tower],
+                                             towers[tower],
+                                             Player.alpha)
+        for barrack in Barracks:
+            self.barracks[barrack] = exp_average(self.barracks[barrack], barracks[barrack], Player.alpha)
+        self.total_games += 1
+
+
+def exp_average(old, new, alpha):
+    return (old * alpha + new) / (1 + alpha)
+
+
+def get_player(player_id) -> Player:
+    if player_id not in data_analysis.PLAYERS:
+        data_analysis.PLAYERS[player_id] = Player(player_id)
+    return data_analysis.PLAYERS[player_id]
 
 
 def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match_id=0):
@@ -116,13 +178,3 @@ def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match
             "xpm": 0,
             "total_games": 0
         }
-
-
-def weighted_average(value_one, weight_one, value_two, weight_two):
-    return (value_one * weight_one + value_two * weight_two) / (weight_one + weight_two)
-
-
-def get_player(player_id):
-    if player_id not in data_analysis.PLAYERS:
-        data_analysis.PLAYERS[player_id] = Player(player_id)
-    return data_analysis.PLAYERS[player_id]
