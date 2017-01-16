@@ -58,3 +58,10 @@ def test_duration(estimator, dataset):
     for match_id in dataset['match_ids']:
         targets.append(Match.get_match_data(match_id)["duration"])
     return cross_val_score(estimator, dataset["features"], targets, cv=10)
+
+
+def test_winrate(estimator, dataset):
+    targets = []
+    for match_id in dataset["match_ids"]:
+        targets.append(Match.get_match_data(match_id)["radiant_win"])
+    return cross_val_score(estimator, dataset["features"], targets, cv=10)

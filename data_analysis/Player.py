@@ -64,6 +64,12 @@ class Player:
         self.barracks = {}
         for barrack in Barracks:
             self.barracks[barrack] = 0
+        self.heroes = {}
+        for i in range(1, 114):  # Those ranges are hard coded, need to fetch from db in future
+            self.heroes[i] = 0
+        self.items = {}
+        for i in range(0, 266):
+            self.items[i] = 0
 
     def __str__(self):
         result = self.short_string()
@@ -83,7 +89,7 @@ class Player:
 
     def get_features(self):
         features = []
-        features += [self.winrate.mu, self.winrate.sigma,self.total_games,self.game_length]
+        features += [self.winrate.mu, self.winrate.sigma, self.total_games, self.game_length]
         for stat in self.stats:
             stat2 = self.stats[stat]
             features += [stat2.mu, stat2.sigma]
@@ -91,6 +97,10 @@ class Player:
             features.append(tower)
         for key, barrack in self.barracks.items():
             features.append(barrack)
+        for hero_id, hero_stat in self.heroes.items():
+            features.append(hero_stat)
+        for item_id, item_stat in self.heroes.items():
+            features.append(item_stat)
         return features
 
     def get_player_id(self):
@@ -101,17 +111,26 @@ class Player:
                                                                 "winrate", self.winrate,
                                                                 "total games", self.total_games)
 
-    def update(self, winrate, match_id, game_length, stats, towers, barracks):
+    def update(self, winrate, match_id, game_length, stats, towers, barracks, hero_id, items):
         self.winrate = winrate
         self.last_match_processed = match_id
         self.game_length = exp_average(self.game_length, game_length, Player.alpha)
         self.stats = stats
+
         for tower in Towers:
-            self.towers[tower] = exp_average(self.towers[tower],
-                                             towers[tower],
-                                             Player.alpha)
+            self.towers[tower] = exp_average(self.towers[tower], towers[tower], Player.alpha)
         for barrack in Barracks:
             self.barracks[barrack] = exp_average(self.barracks[barrack], barracks[barrack], Player.alpha)
+
+        for hero, hero_stat in self.heroes.items():
+            self.heroes[hero] = hero_stat * Player.alpha
+            if hero == hero_id:
+                self.heroes[hero] += 1
+        for item_id, item_stat in self.items.items():
+            self.items[item_id] = item_stat * Player.alpha
+            if item_id in items:
+                self.items[item_id] += 1
+
         self.total_games += 1
 
 

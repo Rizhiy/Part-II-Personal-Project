@@ -81,7 +81,7 @@ def get_player_ids(match_id):
     }
 
 
-def get_match_stats(match_id):
+def get_match_stats(match_id) -> list:
     match_data = data_analysis.MATCHES[match_id]
     player_stats = []
     for player in match_data["players"]:
@@ -93,6 +93,9 @@ def get_match_stats(match_id):
                 player_stat[stat] = None
         player_stat["slot"] = get_player_slot_as_int(player["player_slot"])
         player_stat["id"] = player["account_id"]
+        player_stat["hero_id"] = player["hero_id"]
+        player_stat["items"] = [player["item_0"], player["item_1"], player["item_2"],
+                                player["item_3"], player["item_4"], player["item_5"]]
         player_stats.append(player_stat)
     return player_stats
 
@@ -154,6 +157,10 @@ def update_stats(match_id):
         for idx2, rating in enumerate(results):
             players[stats[idx2]["id"]]["stats"][stat] = rating[0]
 
+    for player_stat in stats:
+        players[player_stat["id"]]["hero_id"] = player_stat["hero_id"]
+        players[player_stat["id"]]["items"] = player_stat["items"]
+
     # towers
     radiant_towers = {}
     dire_towers = {}
@@ -189,12 +196,8 @@ def update_stats(match_id):
             towers = dire_towers
             barracks = dire_barracks
         player = players[player_id]
-        Player.get_player(player_id).update(player["winrate"],
-                                            match_id,
-                                            match_data["duration"],
-                                            player["stats"],
-                                            towers,
-                                            barracks)
+        Player.get_player(player_id).update(player["winrate"], match_id, match_data["duration"], player["stats"],
+                                            towers, barracks, player["hero_id"], player["items"])
 
 
 # Take from the first issue on the github of trueskill
