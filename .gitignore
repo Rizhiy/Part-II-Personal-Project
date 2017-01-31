@@ -4,3 +4,8 @@ all_matches
 *.pyc
 *.pyo
 *.pkl
+
+*.aux
+*.log
+*.synctex.gz
+
