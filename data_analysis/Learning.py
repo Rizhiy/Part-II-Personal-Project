@@ -11,6 +11,9 @@ import data_analysis
 from data_analysis import Match
 from data_analysis.Player import Stats
 
+from sys import maxsize
+from copy import deepcopy
+
 
 def generate_features(match_list, dataset_name):
     features = []
@@ -81,3 +84,58 @@ def predict_stat(stat: Enum, estimator, dataset):
         results.append(y_test[idx] - estimator.predict(match_features))
     results = [x + np.median(targets) for x in results]
     return results
+
+
+def choose_features(stat: Enum, estimator, dataset):
+    current_features = []
+    current_best = -maxsize
+    while True:
+        result = find_next_feature(stat, estimator, dataset, current_features)
+        if result["best_result"] < current_best:
+            break
+        current_features.append(result["best_feature"])
+        print()
+        print(current_features)
+        print(result["best_result"])
+    return current_features
+
+
+def find_next_feature(stat: Enum, estimator, dataset, current_features_idx):
+    all_features = dataset['features']
+
+    current_features = select_current_features(dataset, current_features_idx)
+    best_feature = None
+    best_result = -maxsize
+    for idx, feature in enumerate(all_features[0]):
+        if idx in current_features_idx:
+            continue
+        print("\rChecking Feature {}: ".format(len(current_features_idx) + 1) + "{:.2f}".format(
+            (float(idx) / len(all_features[0]))), end='')
+        new_features = add_feature(dataset, current_features, idx)
+        new_result = np.median(
+            test_stat(stat, estimator, {'features': new_features, 'match_ids': dataset['match_ids']}))
+        if new_result > best_result:
+            best_feature = idx
+            best_result = new_result
+    return {
+        "best_feature": best_feature,
+        "best_result": best_result
+    }
+
+
+def select_current_features(dataset, current_features_idx):
+    current_features = []
+    for feature_set in dataset['features']:
+        current_feature_set = []
+        for idx, feature in enumerate(feature_set):
+            if idx in current_features_idx:
+                current_feature_set.append(feature)
+        current_features.append(current_feature_set)
+    return current_features
+
+
+def add_feature(dataset, current_features, target_idx):
+    new_features = deepcopy(current_features)
+    for idx, feature_set in enumerate(dataset['features']):
+        new_features[idx].append(feature_set[target_idx])
+    return new_features

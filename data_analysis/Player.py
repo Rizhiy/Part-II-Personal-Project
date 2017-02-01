@@ -93,14 +93,14 @@ class Player:
         for stat in self.stats:
             stat2 = self.stats[stat]
             features += [stat2.mu, stat2.sigma]
-        for key, tower in self.towers.items():
-            features.append(tower)
-        for key, barrack in self.barracks.items():
-            features.append(barrack)
-        for hero_id, hero_stat in self.heroes.items():
-            features.append(hero_stat)
-        for item_id, item_stat in self.heroes.items():
-            features.append(item_stat)
+        # for key, tower in self.towers.items():
+        #     features.append(tower)
+        # for key, barrack in self.barracks.items():
+        #     features.append(barrack)
+        # for hero_id, hero_stat in self.heroes.items():
+        #     features.append(hero_stat)
+        # for item_id, item_stat in self.heroes.items():
+        #     features.append(item_stat)
         return features
 
     def get_player_id(self):
