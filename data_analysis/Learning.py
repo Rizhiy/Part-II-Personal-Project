@@ -1,8 +1,11 @@
 import sys
+from enum import Enum
+
 import numpy as np
 import pickle
 
 from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import train_test_split
 
 import data_analysis
 from data_analysis import Match
@@ -65,3 +68,16 @@ def test_winrate(estimator, dataset):
     for match_id in dataset["match_ids"]:
         targets.append(Match.get_match_data(match_id)["radiant_win"])
     return cross_val_score(estimator, dataset["features"], targets, cv=10)
+
+
+def predict_stat(stat: Enum, estimator, dataset):
+    results = []
+    targets = []
+    for player_slot in range(0, 10):
+        targets = generate_targets(dataset['match_ids'], player_slot, stat)
+    X_train, X_test, y_train, y_test = train_test_split(dataset["features"], targets)
+    estimator.fit(X_train, y_train)
+    for idx, match_features in enumerate(X_test):
+        results.append(y_test[idx] - estimator.predict(match_features))
+    results = [x + np.median(targets) for x in results]
+    return results
