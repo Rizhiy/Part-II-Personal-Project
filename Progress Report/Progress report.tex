@@ -21,16 +21,28 @@
 \item[Overseers] Hatice Gunes and Robert Watson
 \end{description}
 
-\subsection*{Work Completed}
+\section*{Algorithm outline}
+The pipeline of the final algorithm is as follows:
+\begin{enumerate}
+\item Collect and clean data
+\item Get initial estimate of player skills of each variable by rating them individually with existing algorithms such as TrueSkill.
+\item Train regressors and classifiers for each variable using initial estimates.
+\item Update skill estimates using trained regressors and classifiers.
+\item Train new regressors and classifiers using updated values.
+\item Repeat previous two steps until peak accuracy is reached.
+\end{enumerate}
+
+\section*{Work Completed}
 \begin{itemize}
 \item All required data has been collected and cleaned.
 \item Different regression and classification methods have been tried, viz. neural networks, support vector machines, gaussian processes, linear, logistic, polynomial and ridge regression as well as naive bayes and random forests.
 \item General outline of the algorithm finished.
-\item Biggest success currently was in predicting GPM and XPM variables achieving $R^2$ values of 0.45 and 0.35 respectively.
+\item Step one to three of the final algorithm completed.
+\item Biggest success currently was in predicting GPM and XPM variables achieving $R^2$ values of 0.43 and 0.35 respectively.
 \end{itemize}
 
-
-The project is about two or three weeks behind schedule, this can be remedied by changing the plan to following (Instead of improving accuracy in section 8, I will catch up): 
+\section*{Schedule update}
+Project is about two weeks behind schedule, this can be remedied by changing the plan to following (Instead of improving accuracy in section 8, I will catch up): 
 \begin{enumerate}
 \setcounter{enumi}{6}
 \item
@@ -87,15 +99,8 @@ By this time the content should be finalised and cosmetic/presentation improveme
 \end{enumerate}
 
 \subsection*{Unexpected Difficulties}
-During the analysis part of the project, it was decided that problems which were previously identified as classification problems should actually be considered as regression problems.
-E.g.\ at the start I was trying to predict which team would win in a match, but later I realised that I should really be predicting win rate probability for each team.
-Unfortunately, win rate probability is not available directly in the dataset and has to be inferred.
-Similarly other classification problems were re-identified as regression ones.
-
 Some of the variables could not be predicted since results are missing from a lot of points in the dataset.
   
-I believe that there may be a problem with achieving the success criterion of the original proposal, viz.\ that mean squared error of predictions should be half the standard deviation in the dataset.
+I believe that there may be a problem with achieving the success criterion of the original proposal, i.e. that mean squared error of predictions should be half the standard deviation in the dataset.
 That is the case since there appears to be not enough information in the type of data collected to predict many variables accurately.
-
-
 \end{document}
