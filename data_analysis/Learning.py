@@ -91,12 +91,13 @@ def choose_features(stat: Enum, estimator, dataset):
     current_best = -maxsize
     while True:
         result = find_next_feature(stat, estimator, dataset, current_features)
-        if result["best_result"] < current_best:
+        num_features = len(current_features)
+        if num_features > 10 and result["best_result"]/current_best < (num_features+1)/num_features:
             break
         current_features.append(result["best_feature"])
         print()
-        print(current_features)
-        print(result["best_result"])
+        print("Selected features: " + str(current_features))
+        print("Score: " + str(result["best_result"]))
     return current_features
 
 
@@ -109,7 +110,7 @@ def find_next_feature(stat: Enum, estimator, dataset, current_features_idx):
     for idx, feature in enumerate(all_features[0]):
         if idx in current_features_idx:
             continue
-        print("\rChecking Feature {}: ".format(len(current_features_idx) + 1) + "{:.2f}".format(
+        print("\rSelecting Feature {}: ".format(len(current_features_idx) + 1) + "{:.2f}".format(
             (float(idx) / len(all_features[0]))), end='')
         new_features = add_feature(dataset, current_features, idx)
         new_result = np.median(

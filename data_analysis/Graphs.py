@@ -1,9 +1,12 @@
 from enum import Enum
 
 import matplotlib.pyplot as plt
-import data_analysis
+from matplotlib.backends.backend_pdf import PdfPages
+
 import numpy as np
 from scipy.stats import gaussian_kde
+
+import data_analysis
 
 from data_analysis import Learning
 
@@ -29,12 +32,43 @@ def raw_stat_hist(stat: Enum):
 
 def error_stat_hist(stat: Enum, regr, dataset):
     results = np.array(Learning.predict_stat(stat, regr, dataset))
-    results = results[~np.isnan(results)] # Remove NaN
+    results = results[~np.isnan(results)]  # Remove NaN
     density = gaussian_kde(results)
     xs = np.linspace(min(results), max(results), 128)
     density.covariance_factor = lambda: .25
     density._compute_covariance()
     raw_stat_hist(stat)
-    stat_error, = plt.plot(xs, density(xs),label="Error distribution + mean")
+    stat_error, = plt.plot(xs, density(xs), label="Error distribution + mean")
     plt.legend(handles=[stat_error])
+    plt.draw()
+
+
+def raw_trueskill_winrate(dataset):
+    outcomes = []
+    radiant_sums = []
+    dire_sums = []
+    for idx, match_id in enumerate(dataset["match_ids"]):
+        radiant_sum = 0
+        dire_sum = 0
+        for idx2, feature in enumerate(dataset["features"][idx]):
+            if idx2 % 22 != 0:
+                continue
+            if idx2 / 22 < 5:
+                radiant_sum += feature
+            else:
+                dire_sum += feature
+        outcomes.append(data_analysis.MATCHES[match_id]["radiant_win"])
+        radiant_sums.append(radiant_sum)
+        dire_sums.append(dire_sum)
+    plt.figure()
+    plt.title("winrate")
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for idx, outcome in enumerate(outcomes):
+        if outcome:
+            ax.plot(radiant_sums[idx], dire_sums[idx], marker='s', color="red")
+        else:
+            ax.plot(radiant_sums[idx], dire_sums[idx], marker='o', color="green")
+    plt.xlabel("Radiant TrueSkill sum")
+    plt.ylabel("Dire TrueSkill sum")
+    # PdfPages('winrate.pdf').savefig()
     plt.draw()

@@ -88,8 +88,7 @@ class Player:
         return match_list
 
     def get_features(self):
-        features = []
-        features += [self.winrate.mu, self.winrate.sigma, self.total_games, self.game_length]
+        features = [self.winrate.mu, self.winrate.sigma, self.total_games, self.game_length]
         for stat in self.stats:
             stat2 = self.stats[stat]
             features += [stat2.mu, stat2.sigma]
