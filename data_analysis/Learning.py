@@ -82,7 +82,6 @@ def predict_stat(stat: Enum, estimator, dataset):
     estimator.fit(X_train, y_train)
     for idx, match_features in enumerate(X_test):
         results.append(y_test[idx] - estimator.predict(match_features))
-    results = [x + np.median(targets) for x in results]
     return results
 
 

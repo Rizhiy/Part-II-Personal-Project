@@ -43,19 +43,19 @@ regr = Ridge()
 #                                                   "Highest", max(winrate_results),
 #                                                   "Lowest", min(winrate_results)))
 
-# Graphs.raw_stat_hist(Stats.GPM)
-# Graphs.raw_stat_hist(Stats.XPM)
-# Graphs.raw_stat_hist(Stats.LEVEL)
-# Graphs.raw_stat_hist(Stats.KILLS)
-#
-# Graphs.error_stat_hist(Stats.GPM,regr,dataset)
-# Graphs.error_stat_hist(Stats.XPM,regr,dataset)
-# Graphs.error_stat_hist(Stats.LEVEL,regr,dataset)
-# Graphs.error_stat_hist(Stats.KILLS,regr,dataset)
+Graphs.raw_stat_hist(Stats.GPM)
+Graphs.raw_stat_hist(Stats.XPM)
+Graphs.raw_stat_hist(Stats.LEVEL)
+Graphs.raw_stat_hist(Stats.KILLS)
+
+Graphs.error_stat_hist(Stats.GPM,regr,dataset)
+Graphs.error_stat_hist(Stats.XPM,regr,dataset)
+Graphs.error_stat_hist(Stats.LEVEL,regr,dataset)
+Graphs.error_stat_hist(Stats.KILLS,regr,dataset)
 
 # Graphs.raw_trueskill_winrate(dataset)
-# print("Graphs drawn")
-# plt.show()
+print("Graphs drawn")
+plt.show()
 
 # selected_features = Learning.choose_features(Stats.GPM, regr, dataset)
 # print(selected_features)
