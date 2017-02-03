@@ -25,12 +25,13 @@
 The pipeline of the final algorithm is as follows:
 \begin{enumerate}
 \item Collect and clean data
-\item Get initial estimate of player skills of each variable by rating them individually with existing algorithms such as TrueSkill.
+\item Get initial estimate of player skills with relation to each variable by rating them individually with existing algorithms such as TrueSkill.
 \item Train regressors and classifiers for each variable using initial estimates.
 \item Update skill estimates using trained regressors and classifiers.
 \item Train new regressors and classifiers using updated values.
 \item Repeat previous two steps until peak accuracy is reached.
 \end{enumerate}
+Currently working on step 4.
 
 \section*{Work Completed}
 \begin{itemize}
