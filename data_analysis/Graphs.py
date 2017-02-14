@@ -1,6 +1,7 @@
 from enum import Enum
 
 import matplotlib.pyplot as plt
+from matplotlib import mlab
 from matplotlib.backends.backend_pdf import PdfPages
 
 import numpy as np
@@ -11,27 +12,39 @@ import data_analysis
 from data_analysis import Learning
 
 
+def density_hist(data: list, label="", figure=True, title=""):
+    if figure:
+        plt.figure()
+        plt.title(title)
+
+    bins = max(data) - min(data)
+    data = np.array(data)
+    data = data[~np.isnan(data)]  # Remove NaN
+    if bins < 50:
+        plt.hist(data, bins=bins, normed=True)
+    else:
+        try:
+            density = gaussian_kde(data)
+        except MemoryError:
+            density = gaussian_kde(data[::100])
+        xs = np.linspace(min(data), max(data), 128)
+        density.covariance_factor = lambda: .25
+        density._compute_covariance()
+        plt.plot(xs, density(xs), label=label)
+    plt.draw()
+
+
 def raw_stat_hist(stat: Enum):
     data = []
     for match in data_analysis.MATCH_LIST:
         for player in data_analysis.MATCHES[match]["players"]:
             data.append(player[stat.value])
-    bins = max(data)
-    plt.figure()
-    plt.title(stat.value)
-    if bins < 50:
-        plt.hist(data, bins=bins, normed=True)
-    else:
-        density = gaussian_kde(data)
-        xs = np.linspace(0, bins, 128)
-        density.covariance_factor = lambda: .25
-        density._compute_covariance()
-        plt.plot(xs, density(xs))
-    plt.draw()
+    density_hist(data,"actual values",title=stat.value)
 
 
+# TODO: there is quite a bit repetition in these methods need to refactor.
 def error_stat_hist(stat: Enum, regr, dataset):
-    results = np.array(Learning.predict_stat(stat, regr, dataset))
+    results = np.array(Learning.calculate_error(stat, regr, dataset))
     results = results[~np.isnan(results)]  # Remove NaN
     density = gaussian_kde(results)
     xs = np.linspace(min(results), max(results), 128)
@@ -40,6 +53,19 @@ def error_stat_hist(stat: Enum, regr, dataset):
     plt.figure()
     plt.title(stat.value + " error")
     plt.plot(xs, density(xs))
+    plt.draw()
+
+
+def prediction_hist(stat: Enum, regr, dataset):
+    results = np.array(Learning.predict_stat(stat, regr, dataset))
+    results = results[~np.isnan(results)]  # Remove NaN
+    density = gaussian_kde(results)
+    xs = np.linspace(min(results), max(results), 128)
+    density.covariance_factor = lambda: .25
+    density._compute_covariance()
+    raw_stat_hist(stat)
+    plt.plot(xs, density(xs), label="predicted values")
+    plt.legend()
     plt.draw()
 
 
@@ -73,3 +99,13 @@ def raw_trueskill_winrate(dataset):
     plt.ylabel("Dire TrueSkill sum")
     # PdfPages('winrate.pdf').savefig()
     plt.draw()
+
+
+def plot_estimation(mean,std,title,value):
+    x = np.linspace(mean-std*4,mean+std*4,100)
+    plt.figure()
+    plt.title(title)
+    plt.plot(x,mlab.normpdf(x,mean,std),label="Predicted probability:\n mu={}, sigma={}".format(int(mean),int(std)))
+    plt.axvline(x=value,label="Actual value: {}".format(value),color='r')
+    plt.ylim([0,0.004])
+    plt.legend()

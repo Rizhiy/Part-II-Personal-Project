@@ -11,7 +11,6 @@ class Stats(Enum):
     KILLS = "kills"
     DEATHS = "deaths"
     ASSISTS = "assists"
-    KDA = "KDA"
     LEVEL = "level"
     GPM = "gold_per_min"
     XPM = "xp_per_min"
@@ -56,8 +55,11 @@ class Player:
         self.last_match_processed = 0
         self.game_length = 0
         self.stats = {}
+        self.averages = {}
         for stat in Stats:
             self.stats[stat] = Rating()
+        for stat in Stats:
+            self.averages[stat] = 0
         self.towers = {}
         for tower in Towers:
             self.towers[tower] = 0
@@ -89,13 +91,14 @@ class Player:
 
     def get_features(self):
         features = [self.winrate.mu, self.winrate.sigma, self.total_games, self.game_length]
-        for stat in self.stats:
-            stat2 = self.stats[stat]
-            features += [stat2.mu, stat2.sigma]
-        # for key, tower in self.towers.items():
-        #     features.append(tower)
-        # for key, barrack in self.barracks.items():
-        #     features.append(barrack)
+        for stat, rating in self.stats.items():
+            features += [rating.mu, rating.sigma]
+        for key, tower in self.towers.items():
+            features.append(tower)
+        for key, barrack in self.barracks.items():
+            features.append(barrack)
+        for stat, average in self.averages.items():
+            features.append(average)
         # for hero_id, hero_stat in self.heroes.items():
         #     features.append(hero_stat)
         # for item_id, item_stat in self.heroes.items():
@@ -110,11 +113,14 @@ class Player:
                                                                 "winrate", self.winrate,
                                                                 "total games", self.total_games)
 
-    def update(self, winrate, match_id, game_length, stats, towers, barracks, hero_id, items):
+    def update(self, winrate, match_id, game_length, stats, towers, barracks, hero_id, items, data):
         self.winrate = winrate
         self.last_match_processed = match_id
         self.game_length = exp_average(self.game_length, game_length, Player.alpha)
         self.stats = stats
+
+        for stat in Stats:
+            self.averages[stat] = exp_average(self.averages[stat], data[stat.value], Player.alpha)
 
         for tower in Towers:
             self.towers[tower] = exp_average(self.towers[tower], towers[tower], Player.alpha)
@@ -143,7 +149,7 @@ def get_player(player_id) -> Player:
     return data_analysis.PLAYERS[player_id]
 
 
-def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match_id=0):
+def calculate_player_averages(player_id, matches_to_use, max_match_id):
     wins = 0
     assists = []
     kills = []
@@ -157,7 +163,7 @@ def calculate_player_averages(player_id, matches_to_use, max_match_id, min_match
     for match in matches_to_use:
         if match > max_match_id:
             continue
-        if total_games > 5:
+        if total_games > 32:
             break
         match_data = Match.get_match_data(match)
         for player in match_data["players"]:

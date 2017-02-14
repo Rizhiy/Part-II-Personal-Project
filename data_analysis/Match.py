@@ -8,13 +8,15 @@ from trueskill.backends import cdf
 import data_analysis
 from data_analysis import Player
 
+from copy import deepcopy
+
 
 def generate_feature_set(match_id):
     match_data = get_match_data(match_id)
     radiant_players = []
     dire_players = []
     for player in match_data["players"]:
-        if (get_player_side(player["player_slot"])):
+        if get_player_side(player["player_slot"]):
             radiant_players.append(player["account_id"])
         else:
             dire_players.append(player["account_id"])
@@ -25,6 +27,24 @@ def generate_feature_set(match_id):
     return {
         "features": features,
         "match_id": match_id
+    }
+
+
+def get_player_data(match_id):
+    match_data = get_match_data(match_id)
+    radiant_players = []
+    dire_players = []
+    for player in match_data["players"]:
+        player_data = deepcopy(data_analysis.PLAYERS[player["account_id"]])
+        if get_player_side(player["player_slot"]):
+            radiant_players.append(player_data)
+        else:
+            dire_players.append(player_data)
+    return {
+        "radiant_players": radiant_players,
+        "dire_players": dire_players,
+        "match_id": match_id,
+        "match_data": match_data
     }
 
 
@@ -53,6 +73,20 @@ def get_random_set(match_list, test_ratio=0.1, selection_ratio=0.5):
         "train_set": train,
         "test_set": test
     }
+
+
+def split_into_sets(match_list, num_sets=10):
+    random.shuffle(match_list)
+    set_size = len(match_list) // num_sets
+    sets = []
+    for set_num in range(0, num_sets):
+        first_element = set_num * set_size
+        if set_num == num_sets - 1:
+            last_element = len(match_list)
+        else:
+            last_element = (set_num + 1) * set_size
+        sets.append(match_list[first_element:last_element])
+    return sets
 
 
 def get_player_ids(match_id):
@@ -96,6 +130,7 @@ def get_match_stats(match_id) -> list:
         player_stat["hero_id"] = player["hero_id"]
         player_stat["items"] = [player["item_0"], player["item_1"], player["item_2"],
                                 player["item_3"], player["item_4"], player["item_5"]]
+        player_stat["data"] = player
         player_stats.append(player_stat)
     return player_stats
 
@@ -160,6 +195,7 @@ def update_stats(match_id):
     for player_stat in stats:
         players[player_stat["id"]]["hero_id"] = player_stat["hero_id"]
         players[player_stat["id"]]["items"] = player_stat["items"]
+        players[player_stat["id"]]["data"] = player_stat["data"]
 
     # towers
     radiant_towers = {}
@@ -197,7 +233,7 @@ def update_stats(match_id):
             barracks = dire_barracks
         player = players[player_id]
         Player.get_player(player_id).update(player["winrate"], match_id, match_data["duration"], player["stats"],
-                                            towers, barracks, player["hero_id"], player["items"])
+                                            towers, barracks, player["hero_id"], player["items"], player["data"])
 
 
 # Take from the first issue on the github of trueskill
