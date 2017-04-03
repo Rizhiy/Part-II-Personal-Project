@@ -1,9 +1,10 @@
 import pickle
+
 import keras
 import numpy as np
 import tensorflow as tf
-
-from keras.layers import Activation, Dense
+from keras.layers import Dense, Dropout
+from keras.layers.core import K
 
 from tensorflow_tutorial import plot_images
 
@@ -19,6 +20,7 @@ def log_normal(x, mu, sigma):
 
 # What are we even trying to do here?
 
+K.set_learning_phase(True)
 sess = tf.Session()
 
 p = keras.models.Sequential()
@@ -27,17 +29,15 @@ dimZ = 50
 dimX = 560
 batch_size = 100
 
-p.add(Dense(units=int((dimZ + dimX * 2) / 2), input_dim=dimZ))
-p.add(Activation('softplus'))
-p.add(Dense(units=dimX * 2))
-p.add(Activation('linear'))
+p.add(Dense(units=int((dimZ + dimX * 2) / 2), input_dim=dimZ, activation='relu'))
+p.add(Dense(units=dimX * 2, activation='linear'))
+p.add(Dropout(0.2))
 
 q = keras.models.Sequential()
 
-q.add(Dense(units=int((dimX + dimZ * 2) / 2), input_dim=dimX))
-q.add(Activation('softplus'))
-q.add(Dense(units=dimZ * 2))
-q.add(Activation('linear'))
+q.add(Dense(units=int((dimX + dimZ * 2) / 2), input_dim=dimX, activation='relu'))
+q.add(Dense(units=dimZ * 2, activation='linear'))
+q.add(Dropout(0.2))
 
 epsilon = tf.random_normal((batch_size, dimZ))
 x = tf.placeholder(tf.float32, shape=(batch_size, dimX))
@@ -58,18 +58,24 @@ log_result = log_p + log_prior - log_q
 loss = -tf.reduce_mean(log_result)  # something is wrong since we can reduce mean below 0
 
 data = pickle.load(open('freyfaces.pkl', 'rb'), encoding='latin1')
-train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
+train_step = tf.train.AdamOptimizer(1e-4).minimize(loss)
 
 init = tf.global_variables_initializer()
 sess.run(init)
-for _ in range(500):
+
+# How to properly compute loss with dropout? Or does it even matter?
+for i in range(10000):
     index = np.random.permutation(data.shape[0])[:100]
     batch = data[index]
-    __, loss_step = sess.run((train_step, loss), feed_dict={x: batch})
-    print(loss_step)
+    if i % 100 == 0:
+        _, loss_step = sess.run((train_step, loss), feed_dict={x: batch})
+        print("iteration: {:4d}, loss: {:5.0f}".format(i, -loss_step))
+    else:
+        _, loss_step = sess.run((train_step, loss), feed_dict={x: batch})
 
+K.set_learning_phase(False)
 z = tf.random_normal((batch_size, dimZ))
 mu_x, log_sigma_x = tf.split(p(z), num_or_size_splits=2, axis=1)
 images = sess.run(mu_x)
 
-plot_images(images,[28,20],'','faces')
+plot_images(images, [28, 20], '', 'faces')
