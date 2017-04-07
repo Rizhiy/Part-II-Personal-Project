@@ -61,7 +61,7 @@ z_0 = mu_q0 + sigma_q0 * epsilon0
 mu_p0, log_sigma_p0 = tf.split(p_0(z_0), num_or_size_splits=2, axis=1)
 sigma_p0 = tf.exp(log_sigma_p0)
 
-mu_q1, log_sigma_q1 = tf.split(q_1(mu_q0), num_or_size_splits=2, axis=1)
+mu_q1, log_sigma_q1 = tf.split(q_1(z_0), num_or_size_splits=2, axis=1)
 sigma_q1 = tf.exp(log_sigma_q1)
 
 z_1 = mu_q1 + sigma_q1 * epsilon1

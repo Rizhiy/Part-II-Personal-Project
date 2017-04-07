@@ -27,15 +27,15 @@ dimZ = 50
 dimX = 560
 batch_size = 100
 
-p.add(Dense(units=int((dimZ + dimX * 2) / 2), input_dim=dimZ, activation='relu'))
+p.add(Dense(units=int((dimZ + dimX * 2) / 2), input_dim=dimZ, activation='softplus'))
 p.add(Dense(units=dimX * 2, activation='linear'))
-p.add(Dropout(.2))
+# p.add(Dropout(.2))
 
 q = keras.models.Sequential()
 
-q.add(Dense(units=int((dimX + dimZ * 2) / 2), input_dim=dimX, activation='relu'))
+q.add(Dense(units=int((dimX + dimZ * 2) / 2), input_dim=dimX, activation='softplus'))
 q.add(Dense(units=dimZ * 2, activation='linear'))
-q.add(Dropout(.2))
+# q.add(Dropout(.2))
 
 epsilon = tf.random_normal((batch_size, dimZ))
 x = tf.placeholder(tf.float32, shape=(batch_size, dimX))
@@ -62,8 +62,8 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 # How to properly compute loss with dropout? Or does it even matter?
-for i in range(50000):
-    if (i + 1) % 1e4 == 0:
+for i in range(20000):
+    if (i + 1) % 1e3 == 0:
         K.set_learning_phase(False)
         z = tf.random_normal((batch_size, dimZ))
         mu_x, log_sigma_x = tf.split(p(z), num_or_size_splits=2, axis=1)
