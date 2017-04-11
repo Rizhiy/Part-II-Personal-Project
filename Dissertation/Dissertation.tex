@@ -1,0 +1,67 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{titling}
+
+% Images
+\usepackage{graphics}
+\graphicspath{ {img/} }
+
+% Automatically match quotation marks
+\usepackage{csquotes}
+\MakeOuterQuote{"}
+
+% Bibleography
+\usepackage[backend=biber,style=authoryear]{biblatex}
+\addbibresource{Disseration.bib}
+
+
+% New commands
+\newcommand\college{Clare College}
+
+
+\title{My dissertation}
+\author{Artem Vasenin}
+\date{\today}
+
+
+\begin{document}
+\maketitle
+
+\section*{Proforma}
+\begin{description}
+\item[Name] \theauthor
+\item[College] \college
+\item[Title] Predicting arbitrary events in competitive computer team games
+\item[Examination] %TODO
+\item[Year] 2017
+\item[Word Count] %TODO
+\item[Project Originator] Artem Vasenin (av429)
+\item[Project Supervisor] Yingzhen Li (yl494)
+\item[Aim] %TODO
+\item[Work done]
+\item[Special Difficulties] %TODO
+\end{description}
+
+\section*{Declaration of Originality}
+I, \theauthor\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
+\\[1\baselineskip]
+\noindent Signed %TODO
+\\[1\baselineskip]
+\noindent Date: \thedate
+
+\clearpage
+\tableofcontents
+
+\chapter{Introduction}
+\chapter{Preparation}
+\chapter{Implementation}
+\chapter{Evaluation}
+\chapter{Conclusions}
+
+\printbibliography
+\appendix
+
+
+
+\end{document}
