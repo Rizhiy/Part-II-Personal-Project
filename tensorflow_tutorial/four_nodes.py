@@ -36,8 +36,8 @@ def make_mu_and_sigma(nn, tensor):
 K.set_learning_phase(True)
 sess = tf.Session()
 
-dimZ_2 = 50
-dimZ_1 = 50
+dimZ_2 = 1
+dimZ_1 = 1
 dimZ_0 = 1000
 dimX = 560
 

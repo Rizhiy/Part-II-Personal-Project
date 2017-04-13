@@ -27,7 +27,7 @@ dimZ = 50
 dimX = 560
 batch_size = 100
 
-p.add(Dense(units=int((dimZ + dimX * 2) / 2), input_dim=dimZ, activation='softplus'))
+p.add(Dense(units=dimX*2, input_dim=dimZ, activation='softplus'))
 p.add(Dense(units=dimX * 2, activation='linear'))
 p.add(Dropout(.2))
 
