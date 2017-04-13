@@ -38,20 +38,20 @@ sess = tf.Session()
 
 dimZ_2 = 50
 dimZ_1 = 50
-dimZ_0 = 50
+dimZ_0 = 1000
 dimX = 560
 
 batch_size = 100
 
 p_X = make_sql_nn(dimZ_0, dimX * 2, True)
-p_0 = make_sql_nn(dimZ_1 + dimZ_2, dimZ_0 * 2,True)
+p_0 = make_sql_nn(dimZ_1 + dimZ_2, dimZ_0 * 2)
 
 q_0 = make_sql_nn(dimX, dimZ_0 * 2)
 q_1 = make_sql_nn(dimZ_0, dimZ_1 * 2)
 q_2 = make_sql_nn(dimZ_0, dimZ_2 * 2)
 
 epsilon0 = tf.random_normal((batch_size, dimZ_0))
-epsilon1 = tf.random_normal((batch_size, dimZ_1))  # TODO: is this correct?
+epsilon1 = tf.random_normal((batch_size, dimZ_1))
 epsilon2 = tf.random_normal((batch_size, dimZ_1))
 x = tf.placeholder(tf.float32, shape=(batch_size, dimX))
 
@@ -61,8 +61,8 @@ z_0 = mu_q0 + sigma_q0 * epsilon0
 
 mu_pX, sigma_pX = make_mu_and_sigma(p_X, z_0)
 
-mu_q1, sigma_q1 = make_mu_and_sigma(q_1, mu_q0)
-mu_q2, sigma_q2 = make_mu_and_sigma(q_2, mu_q0)
+mu_q1, sigma_q1 = make_mu_and_sigma(q_1, z_0)
+mu_q2, sigma_q2 = make_mu_and_sigma(q_2, z_0)
 
 z_1 = mu_q1 + sigma_q1 * epsilon1
 z_2 = mu_q2 + sigma_q2 * epsilon2
@@ -104,4 +104,4 @@ for i in range(50000):
     batch = data[index]
     _, loss_step = sess.run((train_step, loss), feed_dict={x: batch})
     if i % 100 == 0:
-        print("iteration: {:5d}, loss: {:5.0f}".format(i, -loss_step))
+        print("iteration: {:5d}, score: {:5.0f}".format(i, -loss_step))

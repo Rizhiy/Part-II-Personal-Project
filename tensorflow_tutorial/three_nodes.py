@@ -50,7 +50,7 @@ q_0.add(Dense(units=dimZ_0 * 2, activation='linear'))
 # q_0.add(Dropout(.2))
 
 epsilon0 = tf.random_normal((batch_size, dimZ_0))
-epsilon1 = tf.random_normal((batch_size, dimZ_1))  # TODO: is this correct?
+epsilon1 = tf.random_normal((batch_size, dimZ_1))
 x = tf.placeholder(tf.float32, shape=(batch_size, dimX))
 
 mu_q0, log_sigma_q0 = tf.split(q_0(x), num_or_size_splits=2, axis=1)
@@ -98,6 +98,6 @@ for i in range(50000):
     batch = data[index]
     if i % 100 == 0:
         _, loss_step = sess.run((train_step, loss), feed_dict={x: batch})
-        print("iteration: {:5d}, loss: {:5.0f}".format(i, -loss_step))
+        print("iteration: {:5d}, score: {:5.0f}".format(i, -loss_step))
     else:
         _, loss_step = sess.run((train_step, loss), feed_dict={x: batch})

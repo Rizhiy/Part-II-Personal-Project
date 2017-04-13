@@ -8,4 +8,4 @@ all_matches
 *.aux
 *.log
 *.synctex.gz
-
+tensorflow_tutorial/faces/*
