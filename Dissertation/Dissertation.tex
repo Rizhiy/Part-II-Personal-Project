@@ -12,17 +12,20 @@
 \MakeOuterQuote{"}
 
 % Bibleography
-\usepackage[backend=biber,style=authoryear]{biblatex}
-\addbibresource{Disseration.bib}
+\usepackage[backend=biber]{biblatex}
+\addbibresource{Dissertation.bib}
 
+% Indent first paragraphs in sections and chapters
+\usepackage{indentfirst}
 
 % New commands
 \newcommand\college{Clare College}
 
 
-\title{My dissertation}
+\title{Predicting events in computer games with machine learning}
 \author{Artem Vasenin}
 \date{\today}
+
 
 
 \begin{document}
@@ -54,7 +57,30 @@ I, \theauthor\ of \college, being a candidate for Part II of the Computer Scienc
 \tableofcontents
 
 \chapter{Introduction}
+\section{Motivation}
+Multiplayer computer games are becoming very popular, game's success often rests on how enjoyable it is.
+Current method of improving player experience is to make sure that all players have equal chance of winning in a game.
+For that purpose their skill has to be tracked and teams have to be arranged such that they are of equal strength.
+
+In many popular games several roles have to be filled on each team for optimum performance.
+Current algorithms, such as TrueSkill \cite{trueskill}, only track player's overall skill and do not consider what roles the player prefers and how good they are at each one.
+This often leads teams being composed of players all wanting to play in the same role, which either leads to team under-performing or some players not enjoying the game as much as they could.
+Moreover, I believe that the events that happen in game are more important to many player's experience than the actual outcome.
+
+In addition, I believe that the system can improve overall prediction accuracy since tracking only overall player skill means that games with non-transitive strategies cannot be predicted properly. %TODO Make this clearer
+For example, imagine three naive players playing the game of \emph{rock-paper-scissors}.
+Player $R$ always plays \textit{rock}, player $P$ always plays \textit{paper} and player $S$ always plays \textit{scissors}.
+When two of them play against each other, it is clear to us who will win, but a rating that only tracks overall skill can not predict the outcome properly.
+
+To solve the above problems I wanted to make a system which would be able to predict different events that happen in game by tracking player skill in multiple areas.
+
+\section{Related Work}
+%TODO Look properly into this
 \chapter{Preparation}
+Since I decided to use machine learning in my project I had to get some background in the area.
+Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
+\section{Requirement Analysis}
+
 \chapter{Implementation}
 \chapter{Evaluation}
 \chapter{Conclusions}
