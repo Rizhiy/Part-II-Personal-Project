@@ -1,6 +1,6 @@
 \documentclass[12pt,a4paper]{report}
 \usepackage[utf8]{inputenc}
-\usepackage{geometry}
+\usepackage[margin=2cm]{geometry}
 \usepackage{titling}
 
 % Images
@@ -22,7 +22,7 @@
 \newcommand\college{Clare College}
 
 
-\title{Predicting events in computer games with machine learning}
+\title{Predicting events in computer games using machine learning}
 \author{Artem Vasenin}
 \date{\today}
 
@@ -41,15 +41,23 @@
 \item[Word Count] %TODO
 \item[Project Originator] Artem Vasenin (av429)
 \item[Project Supervisor] Yingzhen Li (yl494)
-\item[Aim] %TODO
-\item[Work done]
-\item[Special Difficulties] %TODO
 \end{description}
+
+\subsection*{Original Project Aim}
+The aim of this project was to develop an algorithm which could predict whether certain events would happen in multiplayer computer games.
+In most modern multiplayer games, players are provided with a statistic after each match describing their performance in that match and summarising key choices they have made.
+The project should be able to predict the values of such statistics.
+The mean squared error of such predictions should be less than half of variance of the variable.
+\subsection*{Summary of Work Completed}
+A graphical model was created which produces a probability distribution for continuous statistics.
+%TODO 
+\subsection*{Special Difficulties}
+%TODO
 
 \section*{Declaration of Originality}
 I, \theauthor\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
 \\[1\baselineskip]
-\noindent Signed %TODO
+\noindent Signed 
 \\[1\baselineskip]
 \noindent Date: \thedate
 
@@ -75,10 +83,29 @@ When two of them play against each other, it is clear to us who will win, but a 
 To solve the above problems I wanted to make a system which would be able to predict different events that happen in game by tracking player skill in multiple areas.
 
 \section{Related Work}
-%TODO Look properly into this
+Before starting the project, I have looked into papers and articles about predicting events in sports and computer games.
+I have found out that nothing similar has been tried before.
+Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianranking}) were made to only predict the outcome of the game, not any related statistic.
+Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of the game.
+%TODO Write more here
 \chapter{Preparation}
+\section{Background Research}
 Since I decided to use machine learning in my project I had to get some background in the area.
 Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
+\subsection*{Programming Language and ML Libraries}
+Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
+I have compared a number of libraries (such as Tensorflow\footnote{tensorflow.org/} and Torch\footnote{torch.ch/}), I was primarily interested in how much funcitonality they provide, their performance and how easy it is to learn them.
+
+I have compared their functionality by completing standard machine learning task, such as creating a neaural network to classify images in the MNIST\footnote{yann.lecun.com/exdb/mnist/} dataset.
+Performance was compared by timing how long it would take to achieve 99\% accuracy, in most cases it came down whether GPU acceleration was supported.
+Since I would have to learn how to use the chosen library in detail I also paid attention to the amount of support material available.
+I took note of quality of documentation and also compared number of questions and answers on StackOverflow.
+
+In the end I have arrived at the conclusion that they all provided required functionality and were 
+sufficiently easy to use.
+API for most of them were written in different languages.
+I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python a language I am most comfortable writting code in.
+To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip/}, which makes it much easier to install additional packages.
 \section{Requirement Analysis}
 
 \chapter{Implementation}
