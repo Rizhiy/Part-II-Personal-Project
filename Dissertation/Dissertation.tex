@@ -29,6 +29,7 @@
 
 
 \begin{document}
+\pagenumbering{roman} 
 \maketitle
 
 \section*{Proforma}
@@ -63,24 +64,26 @@ I, \theauthor\ of \college, being a candidate for Part II of the Computer Scienc
 
 \clearpage
 \tableofcontents
+\listoffigures
 
 \chapter{Introduction}
+\pagenumbering{arabic}
 \section{Motivation}
-Multiplayer computer games are becoming very popular, game's success often rests on how enjoyable it is.
+Multiplayer computer games are becoming very popular, more than a 100 million people play League of Legends every month \cite{league100}.
+A game's success often rests on how enjoyable it is.
 Current method of improving player experience is to make sure that all players have equal chance of winning in a game.
 For that purpose their skill has to be tracked and teams have to be arranged such that they are of equal strength.
 
-In many popular games several roles have to be filled on each team for optimum performance.
+In many popular games several roles have to be filled on each team for optimal performance.
 Current algorithms, such as TrueSkill \cite{trueskill}, only track player's overall skill and do not consider what roles the player prefers and how good they are at each one.
 This often leads teams being composed of players all wanting to play in the same role, which either leads to team under-performing or some players not enjoying the game as much as they could.
 Moreover, I believe that the events that happen in game are more important to many player's experience than the actual outcome.
 
-In addition, I believe that the system can improve overall prediction accuracy since tracking only overall player skill means that games with non-transitive strategies cannot be predicted properly. %TODO Make this clearer
-For example, imagine three naive players playing the game of \emph{rock-paper-scissors}.
-Player $R$ always plays \textit{rock}, player $P$ always plays \textit{paper} and player $S$ always plays \textit{scissors}.
-When two of them play against each other, it is clear to us who will win, but a rating that only tracks overall skill can not predict the outcome properly.
-
-To solve the above problems I wanted to make a system which would be able to predict different events that happen in game by tracking player skill in multiple areas.
+To be able to match players better a system has to be built that will take into account how the game is played and what strategies exist in it.
+Creating such a system using classical techniques would require a deep knowledge of workings of a game.
+Unfortunately, I do not have such knowledge of most of the games and obtaining such knowledge although might be fun, will take too long.
+Furthmore, most such games change their rules every few months to keep players interested, therefore performance of hard coded system would decrease as the time goes on.
+As a result I decided to use machine learning techniques which would help me create a system which can adapt to different games by itself and also update its judgement as game changes.
 
 \section{Related Work}
 Before starting the project, I have looked into papers and articles about predicting events in sports and computer games.
@@ -89,10 +92,16 @@ Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianrank
 Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of the game.
 %TODO Write more here
 \chapter{Preparation}
-\section{Background Research}
+\section{Requirement Analysis}
+\section{Starting Point}
+\section{Theoretical Background}
 Since I decided to use machine learning in my project I had to get some background in the area.
 Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
-\subsection*{Programming Language and ML Libraries}
+\section{Software Engineering}
+\subsection{Workflow}
+\subsection{Version Control and Backup}
+\section{Tools used}
+\subsection{Programming Language and ML Libraries}
 Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
 I have compared a number of libraries (such as Tensorflow\footnote{tensorflow.org/} and Torch\footnote{torch.ch/}), I was primarily interested in how much funcitonality they provide, their performance and how easy it is to learn them.
 
@@ -106,7 +115,6 @@ sufficiently easy to use.
 API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python a language I am most comfortable writting code in.
 To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip/}, which makes it much easier to install additional packages.
-\section{Requirement Analysis}
 
 \chapter{Implementation}
 \chapter{Evaluation}
