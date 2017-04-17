@@ -91,15 +91,48 @@ I have found out that nothing similar has been tried before.
 Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianranking}) were made to only predict the outcome of the game, not any related statistic.
 Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of the game.
 %TODO Write more here
+
 \chapter{Preparation}
 \section{Requirement Analysis}
 \section{Starting Point}
+\noindent
+At the beginning of the project I had:
+\begin{itemize}
+\item Basic knowledge of artificial intelligence from \emph{Artificial Intelligence I} Part IB course.
+\item Programming experience in Python (acquired by working on personal projects) and Java (acquired by completing courses in first two years of my study).
+%TODO
+\end{itemize}
+During the course of the project I had to gain following qualities:
+\begin{itemize}
+\item Understanding of various machine learning techniques.
+\item Familiarity with a chosen ML library.
+\item Understanding of theory behind ranking algorithms.
+%TODO
+\end{itemize}
 \section{Theoretical Background}
 Since I decided to use machine learning in my project I had to get some background in the area.
 Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
 \section{Software Engineering}
 \subsection{Workflow}
-\subsection{Version Control and Backup}
+I have decided to use an agile approach of working on this project, since I was not sure exactly how the algorithm should work at the start of the project.
+The project would be done in two phases:
+\begin{enumerate}
+\item Primary research would be done during the second half of Michaelmas term.
+A prototype would be developed during Christmas break.
+\item At the beginning of Lent term the prototype would be evaluated.
+In the first two weeks of February the theory would be improved using insights gained during the development of the prototype.
+In the second two weeks of February the prototype would be refactored to comply with changes in the theory.
+At the beginning of March the revised implementation would be evaluated.
+\end{enumerate}
+This approach allowed me to incorporate the knowledge I gained during the evaluation of a prototype into the final version of the algorithm.
+\subsection{Version Control}
+Git was used for version control.
+This allowed me to roll-back to a previous version of the project in case a mistake was made.
+It also allowed me to compare different versions of a specific component.
+The repository was hosted on GitHub which allowed me to work on the project from multiple machines.
+\subsection{Backup}
+The code was continuously synchronised to Dropbox\footnote{dropbox.com/}.
+Weekly checkpoints were saved to an external hard drive.
 \section{Tools used}
 \subsection{Programming Language and ML Libraries}
 Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
@@ -110,11 +143,15 @@ Performance was compared by timing how long it would take to achieve 99\% accura
 Since I would have to learn how to use the chosen library in detail I also paid attention to the amount of support material available.
 I took note of quality of documentation and also compared number of questions and answers on StackOverflow.
 
-In the end I have arrived at the conclusion that they all provided required functionality and were 
-sufficiently easy to use.
+In the end I have arrived at the conclusion that they all provided required functionality and were sufficiently easy to use.
 API for most of them were written in different languages.
-I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python a language I am most comfortable writting code in.
+I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python, a language I am most comfortable writing code in.
 To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip/}, which makes it much easier to install additional packages.
+
+\subsection{IDE}
+Pycharm was chosen the integrated development environment (IDE) for the project.
+Pycharm has all of the core features of an IDE, such as syntax checking, autocompletion, running of code, etc.
+The use of an IDE streamlined the process of development and allowed me to focus on improving the algorithm rather than worrying about language syntax or library functions signatures. 
 
 \chapter{Implementation}
 \chapter{Evaluation}
