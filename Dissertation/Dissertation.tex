@@ -1,4 +1,4 @@
-\documentclass[12pt,a4paper]{report}
+\documentclass[12pt,a4paper]{book}
 \usepackage[utf8]{inputenc}
 \usepackage[margin=2cm]{geometry}
 \usepackage{titling}
@@ -21,15 +21,53 @@
 % New commands
 \newcommand\college{Clare College}
 
+% Display JSON nicely
+\usepackage{listings}
+\usepackage{xcolor}
 
-\title{Predicting events in computer games using machine learning}
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=8pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{{\color{numb}0}}}{1}
+      {1}{{{\color{numb}1}}}{1}
+      {2}{{{\color{numb}2}}}{1}
+      {3}{{{\color{numb}3}}}{1}
+      {4}{{{\color{numb}4}}}{1}
+      {5}{{{\color{numb}5}}}{1}
+      {6}{{{\color{numb}6}}}{1}
+      {7}{{{\color{numb}7}}}{1}
+      {8}{{{\color{numb}8}}}{1}
+      {9}{{{\color{numb}9}}}{1}
+      {:}{{{\color{punct}{:}}}}{1}
+      {,}{{{\color{punct}{,}}}}{1}
+      {\{}{{{\color{delim}{\{}}}}{1}
+      {\}}{{{\color{delim}{\}}}}}{1}
+      {[}{{{\color{delim}{[}}}}{1}
+      {]}{{{\color{delim}{]}}}}{1},
+}
+
+
+\title{Predicting match statistics in computer games using machine learning}
 \author{Artem Vasenin}
 \date{\today}
 
 
 
 \begin{document}
-\pagenumbering{roman} 
+\frontmatter
 \maketitle
 
 \section*{Proforma}
@@ -39,7 +77,7 @@
 \item[Title] Predicting arbitrary events in competitive computer team games
 \item[Examination] %TODO
 \item[Year] 2017
-\item[Word Count] %TODO
+\item[Word Count] \footnote{ \lstinline+pdftotext Disseration.tex -f 7 -l 38 - | wc -w+,  excluding appendicies and bibliography} %TODO
 \item[Project Originator] Artem Vasenin (av429)
 \item[Project Supervisor] Yingzhen Li (yl494)
 \end{description}
@@ -51,9 +89,15 @@ The project should be able to predict the values of such statistics.
 The mean squared error of such predictions should be less than half of variance of the variable.
 \subsection*{Summary of Work Completed}
 A graphical model was created which produces a probability distribution for continuous statistics.
+The first prototype was built using a combination of ad-hoc use of TrueSkill and machine learning functions from scikit-learn python library.
+The final version was created entirely using TensorFlow.
+The system achieved $R^2$ value of \{\}%TODO
+on \{\}%TODO
+variables in the dataset.
 %TODO 
 \subsection*{Special Difficulties}
-%TODO
+Other than the typo in success criteria, there were none.
+%TODO Check whether this has to be amended.
 
 \section*{Declaration of Originality}
 I, \theauthor\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
@@ -66,8 +110,8 @@ I, \theauthor\ of \college, being a candidate for Part II of the Computer Scienc
 \tableofcontents
 \listoffigures
 
+\mainmatter
 \chapter{Introduction}
-\pagenumbering{arabic}
 \section{Motivation}
 Multiplayer computer games are becoming very popular, more than a 100 million people play League of Legends every month \cite{league100}.
 A game's success often rests on how enjoyable it is.
@@ -79,7 +123,7 @@ Current algorithms, such as TrueSkill \cite{trueskill}, only track player's over
 This often leads teams being composed of players all wanting to play in the same role, which either leads to team under-performing or some players not enjoying the game as much as they could.
 Moreover, I believe that the events that happen in game are more important to many player's experience than the actual outcome.
 
-To be able to match players better a system has to be built that will take into account how the game is played and what strategies exist in it.
+To be able to match players better, a system has to be built that will take into account how the game is played and what strategies exist in it.
 Creating such a system using classical techniques would require a deep knowledge of workings of a game.
 Unfortunately, I do not have such knowledge of most of the games and obtaining such knowledge although might be fun, will take too long.
 Furthmore, most such games change their rules every few months to keep players interested, therefore performance of hard coded system would decrease as the time goes on.
@@ -87,13 +131,37 @@ As a result I decided to use machine learning techniques which would help me cre
 
 \section{Related Work}
 Before starting the project, I have looked into papers and articles about predicting events in sports and computer games.
-I have found out that nothing similar has been tried before.
+I have found out that nothing similar has been done before.
 Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianranking}) were made to only predict the outcome of the game, not any related statistic.
 Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of the game.
 %TODO Write more here
 
 \chapter{Preparation}
+\section{Types of variables to predict}
+Values included in the game statistic can be rougle separated into two types: class based and regression based.
+
+For example in many games players have the ability to buy items.
+These items are usually represented as numbers in match statistic, but nearby values usually don't have much in common.
+Therefore, if we want to predict what items a player will buy, a classification method should be used.
+
+On the other hand something like players score is a value which increases progressively, therefore nearby values have similar significance.
+In such cases regression techniques should be used.
 \section{Requirement Analysis}
+The projects aimed to produce a system that would be able to predict match statistics data from players past games.
+\subsection{Functional Requirements}
+\begin{itemize}
+\item The system must be able to run on any properly formatted data.
+\item The predictions should be based on skills of all players in the game, not the player for which predcitions are being made.
+\item The system should be able to maintain a belief state about a player skill through time and make time-sensitive predictions, not the same prediction for all games. %TODO Explain this better
+\end{itemize}
+\subsection{Non-functional Requirements}
+\begin{itemize}
+\item The system should be able to make predictions in under a minute after being trained, on my machine\footnote{Specifications of machine's hardware are given in the project proposal}.
+\item The mean squared error of system's predictions should be less than one half of player's standard deviation for that statistic.
+\end{itemize}
+Regarding the last point: while this is the requirement given in project proposal, I later realised that it contains a typo which make it almost impossible to achieve.
+"Mean squared error", this should have been "mean absolute error".
+As it currently stands the systems deviation is squared, while original deviation is not, which means that achieving this requirement gets more difficult the larger the original deviation is.
 \section{Starting Point}
 \noindent
 At the beginning of the project I had:
@@ -110,6 +178,12 @@ During the course of the project I had to gain following qualities:
 %TODO
 \end{itemize}
 \section{Theoretical Background}
+\subsection{Rating Algorithms}
+
+\subsection{Machine Learning}
+Machine learning allows computers to make predictions on data by learning on past examples and without being explicitly programmed.
+The aim of my project was to create an algorithm which could work with any game, therefore machine learning was the perfect set of techniques to apply.
+
 Since I decided to use machine learning in my project I had to get some background in the area.
 Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
 \section{Software Engineering}
@@ -154,12 +228,292 @@ Pycharm has all of the core features of an IDE, such as syntax checking, autocom
 The use of an IDE streamlined the process of development and allowed me to focus on improving the algorithm rather than worrying about language syntax or library functions signatures. 
 
 \chapter{Implementation}
+\section{First Prototype}
+The main problem in machine learning is frequently generation of correct features to represent the data.
+In my case I had statistics of more than twenty thousand games.
+Most players had a few hundred games in the dataset.
+Statistic for each match is represented as a dictionary of key-value pairs (in JSON\footnote{json.org} format), overall there are more than 200 values per statistic, an example of a statistic can be found in Appendix \ref{statexample}.
+This meant that using raw data for input would be impractical, therefore some kind of aggregation had to be created.
+
+At first I tried using means and standard deviations of players results as features.
+While this approach made predictions which were better than just predicting player mean, they weren't very good.
+A variety of machine learning techniques were tried, including: Neural Networks (NN), Support Vector Machines (SVM), Gaussian Processes (GP), Ridge Regression (RR) and Naive Bayes (NB).
+NN, SVM and NB were used for classification variables, while GP and RR were used for regression.
+\section{Final System}
 \chapter{Evaluation}
 \chapter{Conclusions}
 
-\printbibliography
+
+\printbibliography[heading=bibintoc,title={Bibliography}]
+
 \appendix
-
-
+\chapter{Example of a Statistic} \label{statexample}
+\begin{lstlisting}[language=json,firstnumber=1]
+{  
+   "result":{  
+      "players":[  
+         {  
+            "account_id":87382579,
+            "player_slot":0,
+            "hero_id":60,
+            "item_0":239,
+            "item_1":92,
+            "item_2":46,
+            "item_3":108,
+            "item_4":29,
+            "item_5":6,
+            "backpack_0":0,
+            "backpack_1":0,
+            "backpack_2":0,
+            "kills":3,
+            "deaths":7,
+            "assists":17,
+            "leaver_status":0,
+            "last_hits":72,
+            "denies":2,
+            "gold_per_min":254,
+            "xp_per_min":298,
+            "level":14,
+            "hero_damage":5682,
+            "tower_damage":277,
+            "hero_healing":170,
+            "gold":73,
+            "gold_spent":9220,
+            "scaled_hero_damage":0,
+            "scaled_tower_damage":0,
+            "scaled_hero_healing":0,
+            "ability_upgrades":[  
+               {  
+                  "ability":5275,
+                  "time":886,
+                  "level":1
+               },
+               {  
+                  "ability":5277,
+                  "time":949,
+                  "level":2
+               },
+               {  
+                  "ability":5275,
+                  "time":1121,
+                  "level":3
+               },
+               {  
+                  "ability":5276,
+                  "time":1287,
+                  "level":4
+               },
+               {  
+                  "ability":5275,
+                  "time":1342,
+                  "level":5
+               },
+               {  
+                  "ability":5278,
+                  "time":1483,
+                  "level":6
+               },
+               {  
+                  "ability":5277,
+                  "time":1583,
+                  "level":7
+               },
+               {  
+                  "ability":5275,
+                  "time":1663,
+                  "level":8
+               },
+               {  
+                  "ability":5277,
+                  "time":1771,
+                  "level":9
+               },
+               {  
+                  "ability":5277,
+                  "time":1975,
+                  "level":10
+               },
+               {  
+                  "ability":5278,
+                  "time":2033,
+                  "level":11
+               },
+               {  
+                  "ability":5276,
+                  "time":2358,
+                  "level":12
+               },
+               {  
+                  "ability":5276,
+                  "time":2483,
+                  "level":13
+               },
+               {  
+                  "ability":5276,
+                  "time":2772,
+                  "level":14
+               }
+            ]
+         },
+         <There are nine more sets of player data, which have been exluded to save space>
+      ],
+      "radiant_win":false,
+      "duration":2368,
+      "pre_game_duration":90,
+      "start_time":1471142574,
+      "match_id":2569610900,
+      "match_seq_num":2244488581,
+      "tower_status_radiant":1540,
+      "tower_status_dire":1956,
+      "barracks_status_radiant":3,
+      "barracks_status_dire":63,
+      "cluster":113,
+      "first_blood_time":89,
+      "lobby_type":1,
+      "human_players":10,
+      "leagueid":4664,
+      "positive_votes":38429,
+      "negative_votes":2503,
+      "game_mode":2,
+      "flags":1,
+      "engine":1,
+      "radiant_score":27,
+      "dire_score":30,
+      "radiant_team_id":2512249,
+      "radiant_name":"Digital Chaos",
+      "radiant_logo":692780106202747975,
+      "radiant_team_complete":1,
+      "dire_team_id":1836806,
+      "dire_name":"the wings gaming",
+      "dire_logo":352770708597344369,
+      "dire_team_complete":1,
+      "radiant_captain":87382579,
+      "dire_captain":111114687,
+      "picks_bans":[  
+         {  
+            "is_pick":false,
+            "hero_id":79,
+            "team":1,
+            "order":0
+         },
+         {  
+            "is_pick":false,
+            "hero_id":6,
+            "team":0,
+            "order":1
+         },
+         {  
+            "is_pick":false,
+            "hero_id":38,
+            "team":1,
+            "order":2
+         },
+         {  
+            "is_pick":false,
+            "hero_id":41,
+            "team":0,
+            "order":3
+         },
+         {  
+            "is_pick":true,
+            "hero_id":103,
+            "team":1,
+            "order":4
+         },
+         {  
+            "is_pick":true,
+            "hero_id":9,
+            "team":0,
+            "order":5
+         },
+         {  
+            "is_pick":true,
+            "hero_id":98,
+            "team":0,
+            "order":6
+         },
+         {  
+            "is_pick":true,
+            "hero_id":65,
+            "team":1,
+            "order":7
+         },
+         {  
+            "is_pick":false,
+            "hero_id":8,
+            "team":0,
+            "order":8
+         },
+         {  
+            "is_pick":false,
+            "hero_id":111,
+            "team":1,
+            "order":9
+         },
+         {  
+            "is_pick":false,
+            "hero_id":74,
+            "team":0,
+            "order":10
+         },
+         {  
+            "is_pick":false,
+            "hero_id":23,
+            "team":1,
+            "order":11
+         },
+         {  
+            "is_pick":true,
+            "hero_id":20,
+            "team":0,
+            "order":12
+         },
+         {  
+            "is_pick":true,
+            "hero_id":90,
+            "team":1,
+            "order":13
+         },
+         {  
+            "is_pick":true,
+            "hero_id":93,
+            "team":0,
+            "order":14
+         },
+         {  
+            "is_pick":true,
+            "hero_id":1,
+            "team":1,
+            "order":15
+         },
+         {  
+            "is_pick":false,
+            "hero_id":17,
+            "team":0,
+            "order":16
+         },
+         {  
+            "is_pick":false,
+            "hero_id":28,
+            "team":1,
+            "order":17
+         },
+         {  
+            "is_pick":true,
+            "hero_id":2,
+            "team":1,
+            "order":18
+         },
+         {  
+            "is_pick":true,
+            "hero_id":60,
+            "team":0,
+            "order":19
+         }
+      ]
+   }
+}
+\end{lstlisting}
+\chapter{Project Proposal}
 
 \end{document}
