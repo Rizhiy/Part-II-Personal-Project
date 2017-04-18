@@ -205,14 +205,14 @@ This allowed me to roll-back to a previous version of the project in case a mist
 It also allowed me to compare different versions of a specific component.
 The repository was hosted on GitHub which allowed me to work on the project from multiple machines.
 \subsection{Backup}
-The code was continuously synchronised to Dropbox\footnote{dropbox.com/}.
+The code was continuously synchronised to Dropbox\footnote{dropbox.com}.
 Weekly checkpoints were saved to an external hard drive.
 \section{Tools used}
 \subsection{Programming Language and ML Libraries}
 Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
-I have compared a number of libraries (such as Tensorflow\footnote{tensorflow.org/} and Torch\footnote{torch.ch/}), I was primarily interested in how much funcitonality they provide, their performance and how easy it is to learn them.
+I have compared a number of libraries (such as Tensorflow\footnote{tensorflow.org} and Torch\footnote{torch.ch}), I was primarily interested in how much funcitonality they provide, their performance and how easy it is to learn them.
 
-I have compared their functionality by completing standard machine learning task, such as creating a neaural network to classify images in the MNIST\footnote{yann.lecun.com/exdb/mnist/} dataset.
+I have compared their functionality by completing standard machine learning task, such as creating a neaural network to classify images in the MNIST\footnote{yann.lecun.com/exdb/mnist} dataset.
 Performance was compared by timing how long it would take to achieve 99\% accuracy, in most cases it came down whether GPU acceleration was supported.
 Since I would have to learn how to use the chosen library in detail I also paid attention to the amount of support material available.
 I took note of quality of documentation and also compared number of questions and answers on StackOverflow.
@@ -220,7 +220,7 @@ I took note of quality of documentation and also compared number of questions an
 In the end I have arrived at the conclusion that they all provided required functionality and were sufficiently easy to use.
 API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python, a language I am most comfortable writing code in.
-To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip/}, which makes it much easier to install additional packages.
+To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip}, which makes it much easier to install additional packages.
 
 \subsection{IDE}
 Pycharm was chosen the integrated development environment (IDE) for the project.
@@ -235,10 +235,34 @@ Most players had a few hundred games in the dataset.
 Statistic for each match is represented as a dictionary of key-value pairs (in JSON\footnote{json.org} format), overall there are more than 200 values per statistic, an example of a statistic can be found in Appendix \ref{statexample}.
 This meant that using raw data for input would be impractical, therefore some kind of aggregation had to be created.
 
+\subsection{Simple mean and variance}
 At first I tried using means and standard deviations of players results as features.
 While this approach made predictions which were better than just predicting player mean, they weren't very good.
 A variety of machine learning techniques were tried, including: Neural Networks (NN), Support Vector Machines (SVM), Gaussian Processes (GP), Ridge Regression (RR) and Naive Bayes (NB).
 NN, SVM and NB were used for classification variables, while GP and RR were used for regression.
+All of the methods had similar performance, which indicated that features generated were not sufficient.
+To improve the features I first tried putting a limit on how many games were used to calculate player's mean and average, while this improved performance a bit, it was still very poor.
+Next thing to try was rating players based on their performance in each variable.
+
+\subsection{Rating of results}
+The easiest algorithm to use for rating players was TrueSkill, since it offered rating games with multiple players and there was a library\footnote{trueskill.org} for python which provided the functionality.
+Trueskill only uses the final ranking of the individual at the end of the game, rather than absolute value, therefore some informations is lost.
+This also meant that I had to do further processing on the data to convert raw statistic into ranks.
+This was mostly straightforward, one thing to note is that some ranks (such as death count) had to be reversed, since players try to keep those results low rather than make them high.
+
+Such ad-hoc use of TrueSkill meant that one of the assumptions behind the algorithm was not met:
+the algorithm assumes that all players are competing against each other, but in reality they are separated into two teams.
+This meant that resulting ratings were very accurate.
+
+Player ranks were then used as features for machine learning techniques.
+This approach generated much better results than simple mean and variance, with best variable achieving $R^2$ value of 0.47.
+Although this is much better than previous results, it is still far from required value of 0.75.
+
+\subsection{Analysis of the prototype}
+During analysis of predictions produced by the prototype, I observed that the range of predictions was much smaller than the actual range for most variables %TODO insert figures of prediction ranges
+In addition, most of the machine learning techniques had similar predictive performance.
+These two facts combined led me to believe that the problem is again with quality of features.
+Therefore, I decided to create my own graphical model to generate features.
 \section{Final System}
 \chapter{Evaluation}
 \chapter{Conclusions}
@@ -248,7 +272,9 @@ NN, SVM and NB were used for classification variables, while GP and RR were used
 
 \appendix
 \chapter{Example of a Statistic} \label{statexample}
-\begin{lstlisting}[language=json,firstnumber=1]
+Some parts of this statistic are repetetive and take up a lot of space.
+In such parts, all but the first set were hidden, indicated by comments in $<>$.
+\begin{lstlisting}[language=json,firstnumber=1, basicstyle=\small]
 {  
    "result":{  
       "players":[  
@@ -288,74 +314,10 @@ NN, SVM and NB were used for classification variables, while GP and RR were used
                   "time":886,
                   "level":1
                },
-               {  
-                  "ability":5277,
-                  "time":949,
-                  "level":2
-               },
-               {  
-                  "ability":5275,
-                  "time":1121,
-                  "level":3
-               },
-               {  
-                  "ability":5276,
-                  "time":1287,
-                  "level":4
-               },
-               {  
-                  "ability":5275,
-                  "time":1342,
-                  "level":5
-               },
-               {  
-                  "ability":5278,
-                  "time":1483,
-                  "level":6
-               },
-               {  
-                  "ability":5277,
-                  "time":1583,
-                  "level":7
-               },
-               {  
-                  "ability":5275,
-                  "time":1663,
-                  "level":8
-               },
-               {  
-                  "ability":5277,
-                  "time":1771,
-                  "level":9
-               },
-               {  
-                  "ability":5277,
-                  "time":1975,
-                  "level":10
-               },
-               {  
-                  "ability":5278,
-                  "time":2033,
-                  "level":11
-               },
-               {  
-                  "ability":5276,
-                  "time":2358,
-                  "level":12
-               },
-               {  
-                  "ability":5276,
-                  "time":2483,
-                  "level":13
-               },
-               {  
-                  "ability":5276,
-                  "time":2772,
-                  "level":14
-               }
+               <There is one set per level and players can advance up to level 25>
             ]
          },
-         <There are nine more sets of player data, which have been exluded to save space>
+         <There are nine more sets of player data>
       ],
       "radiant_win":false,
       "duration":2368,
@@ -396,120 +358,7 @@ NN, SVM and NB were used for classification variables, while GP and RR were used
             "team":1,
             "order":0
          },
-         {  
-            "is_pick":false,
-            "hero_id":6,
-            "team":0,
-            "order":1
-         },
-         {  
-            "is_pick":false,
-            "hero_id":38,
-            "team":1,
-            "order":2
-         },
-         {  
-            "is_pick":false,
-            "hero_id":41,
-            "team":0,
-            "order":3
-         },
-         {  
-            "is_pick":true,
-            "hero_id":103,
-            "team":1,
-            "order":4
-         },
-         {  
-            "is_pick":true,
-            "hero_id":9,
-            "team":0,
-            "order":5
-         },
-         {  
-            "is_pick":true,
-            "hero_id":98,
-            "team":0,
-            "order":6
-         },
-         {  
-            "is_pick":true,
-            "hero_id":65,
-            "team":1,
-            "order":7
-         },
-         {  
-            "is_pick":false,
-            "hero_id":8,
-            "team":0,
-            "order":8
-         },
-         {  
-            "is_pick":false,
-            "hero_id":111,
-            "team":1,
-            "order":9
-         },
-         {  
-            "is_pick":false,
-            "hero_id":74,
-            "team":0,
-            "order":10
-         },
-         {  
-            "is_pick":false,
-            "hero_id":23,
-            "team":1,
-            "order":11
-         },
-         {  
-            "is_pick":true,
-            "hero_id":20,
-            "team":0,
-            "order":12
-         },
-         {  
-            "is_pick":true,
-            "hero_id":90,
-            "team":1,
-            "order":13
-         },
-         {  
-            "is_pick":true,
-            "hero_id":93,
-            "team":0,
-            "order":14
-         },
-         {  
-            "is_pick":true,
-            "hero_id":1,
-            "team":1,
-            "order":15
-         },
-         {  
-            "is_pick":false,
-            "hero_id":17,
-            "team":0,
-            "order":16
-         },
-         {  
-            "is_pick":false,
-            "hero_id":28,
-            "team":1,
-            "order":17
-         },
-         {  
-            "is_pick":true,
-            "hero_id":2,
-            "team":1,
-            "order":18
-         },
-         {  
-            "is_pick":true,
-            "hero_id":60,
-            "team":0,
-            "order":19
-         }
+         <There are about 20 sets in this list, detailing the drafting phase>
       ]
    }
 }
