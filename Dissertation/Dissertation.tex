@@ -90,7 +90,7 @@ The mean squared error of such predictions should be less than half of variance 
 \subsection*{Summary of Work Completed}
 A graphical model was created which produces a probability distribution for continuous statistics.
 The first prototype was built using a combination of ad-hoc use of TrueSkill and machine learning functions from scikit-learn python library.
-The final version was created entirely using TensorFlow.
+The final version was created entirely using TensorFlow and Keras.
 The system achieved $R^2$ value of \{\}%TODO
 on \{\}%TODO
 variables in the dataset.
@@ -203,7 +203,7 @@ This approach allowed me to incorporate the knowledge I gained during the evalua
 Git was used for version control.
 This allowed me to roll-back to a previous version of the project in case a mistake was made.
 It also allowed me to compare different versions of a specific component.
-The repository was hosted on GitHub which allowed me to work on the project from multiple machines.
+The repository was hosted on GitHub\footnote{github.com} which allowed me to work on the project from multiple machines.
 \subsection{Backup}
 The code was continuously synchronised to Dropbox\footnote{dropbox.com}.
 Weekly checkpoints were saved to an external hard drive.
@@ -220,6 +220,8 @@ I took note of quality of documentation and also compared number of questions an
 In the end I have arrived at the conclusion that they all provided required functionality and were sufficiently easy to use.
 API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python, a language I am most comfortable writing code in.
+TensorFlow is a low-level library, in which you have to construct each layer of neural network explicitly, I did not need that level of customisation, therefore I used Keras to help me build the neural networks.
+
 To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip}, which makes it much easier to install additional packages.
 
 \subsection{IDE}
@@ -253,7 +255,6 @@ This was mostly straightforward, one thing to note is that some ranks (such as d
 Such ad-hoc use of TrueSkill meant that one of the assumptions behind the algorithm was not met:
 the algorithm assumes that all players are competing against each other, but in reality they are separated into two teams.
 This meant that resulting ratings were very accurate.
-
 Player ranks were then used as features for machine learning techniques.
 This approach generated much better results than simple mean and variance, with best variable achieving $R^2$ value of 0.47.
 Although this is much better than previous results, it is still far from required value of 0.75.
