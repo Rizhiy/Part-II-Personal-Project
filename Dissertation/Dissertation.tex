@@ -293,6 +293,8 @@ Since the system can never be sure on the exact skill values for each player, sk
 \subsection{Choosing distributions for variables}
 \subsection{Updating skill values}
 \subsection{Prediction}
+To predict the values for a particular match-up we just need to take the set of skills corresponding to players in the match-up and feed them into the top of the model.
+
 \begin{figure}[ht]
 \centering
 \begin{tikzpicture}
@@ -347,6 +349,31 @@ Since the system can never be sure on the exact skill values for each player, sk
 
 
 \chapter{Evaluation}
+\section{Preprocessing}
+When neural networks have been trained, we need process every match in chronological order to update the player skills.
+To make evaluation quicker we can create a dictionary which contains match id as keys and skills of the players taking part in that match.
+We need to store the player skills before processing the match and updating them to accurately reflect real world scenario.
+\section{Train/Validation/Test split}
+Most important rule when evaluating machine learning systems is that the algorithm has to be finalised before starting to test.
+Therefore right at the start we can split our data into two parts: \emph{train} and \emph{test}.
+\emph{Train} set will be used to train the algorithm and adjust hyper-parameters.
+\emph{Test} set will be used for evaluation of the algorithm.
+
+To adjust hyper-parameters fairly we need to reflect evaluation procedure during our training.
+For that purpose the train set is further split into two parts: \emph{train} and \emph{validation}.
+\subsection{Cross-validation}
+If we reuse the same part for validation, we run the risk of over-fitting our algorithm to that particular part of the dataset.
+To combat that, we can use cross-validation: we run train/validation multiple times, each time picking new set to use for validation.
+To ensure complete coverage of the train-set we can use \emph{k-fold cross-validation}: 
+\begin{enumerate}
+\item Divide the training set into $k$ random subsets.
+\item Pick a subset that has not been validated on, use it for validation and the rest for training.
+Record the result.
+\item Repeat step two until all subsets have been used for validation.
+\item Average the results.
+\end{enumerate}
+
+
 \chapter{Conclusions}
 
 
