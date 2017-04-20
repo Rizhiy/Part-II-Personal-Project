@@ -18,6 +18,17 @@
 % Indent first paragraphs in sections and chapters
 \usepackage{indentfirst}
 
+% Graphical Models
+\usepackage{tikz}
+\usetikzlibrary{fit,positioning,bayesnet}
+\usepackage{amsmath}
+% Use full stop for comma
+\mathchardef\period=\mathcode`.
+\DeclareMathSymbol{.}{\mathord}{letters}{"3B}
+
+% Landscape for diagrams
+\usepackage{lscape}
+
 % New commands
 \newcommand\college{Clare College}
 
@@ -175,6 +186,7 @@ During the course of the project I had to gain following qualities:
 \item Understanding of various machine learning techniques.
 \item Familiarity with a chosen ML library.
 \item Understanding of theory behind ranking algorithms.
+\item Learn \LaTeX\ and related packages (such as Tikz for graphs) to write-up this dissertation.
 %TODO
 \end{itemize}
 \section{Theoretical Background}
@@ -260,11 +272,80 @@ This approach generated much better results than simple mean and variance, with 
 Although this is much better than previous results, it is still far from required value of 0.75.
 
 \subsection{Analysis of the prototype}
-During analysis of predictions produced by the prototype, I observed that the range of predictions was much smaller than the actual range for most variables %TODO insert figures of prediction ranges
+\begin{figure}[h]
+\centering
+\includegraphics[scale=0.5]{predicted_assists}
+\caption{Distribution of predicted values vs.\ actual variable distribution}
+\label{fig:variablerange}
+\end{figure}
+During analysis of predictions produced by the prototype, I observed that the range of predictions was much smaller than the actual range for most variables.
+An example of this can be seen on figure \ref{fig:variablerange}, where predictions rough range of 5 to 15, while actual variable range is roughly 0 to 30.
 In addition, most of the machine learning techniques had similar predictive performance.
 These two facts combined led me to believe that the problem is again with quality of features.
-Therefore, I decided to create my own graphical model to generate features.
+Therefore, I decided to create my own graphical model to generate richer features.
 \section{Final System}
+\subsection{Player skills}
+Every game is different and trying to pick specific set of skills for each one, would not be practical.
+Therefore, I decided to make an assumption that players skill in a game can be described by $n$ real numbers.
+Such $n$ will be different for each game and therefore is a hyper parameter in my model.
+Since the system can never be sure on the exact skill values for each player, skills of each player are represented as $n$ Gaussian distributions.
+\subsection{Neural networks}
+\subsection{Choosing distributions for variables}
+\subsection{Updating skill values}
+\subsection{Prediction}
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+	% Team results
+	\node[obs] (y) [] {$y$};	
+	
+	% Team performances
+	\node[latent] (t0)[above=2cm of y, xshift=-5cm] {$\boldsymbol{t}_0$};
+	\node[latent] (t1)[above=2cm of y, xshift=5cm] {$\boldsymbol{t}_1$};
+	
+	% Player results
+ 	\node[obs] (x0)[below= 2cm of t0, xshift=-2cm] {$\boldsymbol{x}_0$};
+ 	\node[obs] (x1)[below= 2cm of t0, xshift=2cm] {$\boldsymbol{x}_1$};
+ 	\node[obs] (x2)[below= 2cm of t1, xshift=-2cm] {$\boldsymbol{x}_2$};
+ 	\node[obs] (x3)[below= 2cm of t1, xshift=2cm] {$\boldsymbol{x}_3$};
+ 	
+ 	% Player performances
+ 	\node[latent] (p0)[above=of t0, xshift=-2cm] {$\boldsymbol{p}_0$};
+ 	\node[latent] (p1)[above=of t0, xshift=2cm] {$\boldsymbol{p}_1$};
+ 	\node[latent] (p2)[above=of t1, xshift=-2cm] {$\boldsymbol{p}_2$};
+ 	\node[latent] (p3)[above=of t1, xshift=2cm] {$\boldsymbol{p}_3$};
+ 	
+ 	% Player skills
+ 	\node[latent] (s0)[above=of p0] {$\boldsymbol{s}_0$};
+ 	\node[latent] (s1)[above=of p1] {$\boldsymbol{s}_1$};
+ 	\node[latent] (s2)[above=of p2] {$\boldsymbol{s}_2$};
+ 	\node[latent] (s3)[above=of p3] {$\boldsymbol{s}_3$};
+ 	
+ 	% Skill to performace
+ 	\edge[] {s0} {p0};
+ 	\edge[] {s1} {p1};
+ 	\edge[] {s2} {p2};
+ 	\edge[] {s3} {p3};
+ 	
+ 	%Player to team performance
+ 	\edge[] {p0,p1} {t0};
+ 	\edge[] {p2,p3} {t1};
+ 	
+ 	%Player results
+ 	\edge[] {p0,t0,t1} {x0};
+ 	\edge[] {p1,t0,t1} {x1};
+ 	\edge[] {p2,t1,t0} {x2};
+ 	\edge[] {p3,t1,t0} {x3};
+ 	
+ 	%Team performance
+ 	\edge[] {t0,t1} {y};
+ 	
+	
+\end{tikzpicture}
+\caption{An example of an inference model for four players in two teams.}
+\end{figure}
+
+
 \chapter{Evaluation}
 \chapter{Conclusions}
 
@@ -364,6 +445,112 @@ In such parts, all but the first set were hidden, indicated by comments in $<>$.
    }
 }
 \end{lstlisting}
+\chapter{Factor graph example}
+%TODO work on this more
+\begin{landscape}
+\begin{figure}
+\centering
+\begin{tikzpicture}[scale=0.5]
+\tikzstyle{main}=[circle, thick, draw =black!80]
+\tikzstyle{connect}=[-latex, thick]
+\tikzstyle{box}=[rectangle, draw=black!100]
+	
+	% Team results
+	\node[main,fill=black!15] (y) [] {$\boldsymbol{y}$};
+	
+	% Team performances
+	\node[main] (t0)[above=of y, xshift=-6cm] {$\boldsymbol{t}_0$};
+	\node[main] (t1)[above=of y, xshift=6cm] {$\boldsymbol{t}_1$};
+	
+	% Player results
+ 	\node[main,fill=black!15] (x0)[below= 5cm of t0, xshift=-2.5cm] {$\boldsymbol{x}_0$};
+ 	\node[main,fill=black!15] (x1)[below= 7cm of t0, xshift=2.5cm] {$\boldsymbol{x}_1$};
+ 	\node[main,fill=black!15] (x2)[below= 5cm of t1, xshift=-2.5cm] {$\boldsymbol{x}_2$};
+ 	\node[main,fill=black!15] (x3)[below= 7cm of t1, xshift=2.5cm] {$\boldsymbol{x}_3$};
+ 	
+ 	% Player performances
+ 	\node[main] (p0)[above=of t0, xshift=-2.5cm] {$\boldsymbol{p}_0$};
+ 	\node[main] (p1)[above=of t0, xshift=2.5cm] {$\boldsymbol{p}_1$};
+ 	\node[main] (p2)[above=of t1, xshift=-2.5cm] {$\boldsymbol{p}_2$};
+ 	\node[main] (p3)[above=of t1, xshift=2.5cm] {$\boldsymbol{p}_3$};
+ 	
+ 	% Player skills
+ 	\node[main] (s0)[above=of p0] {$\boldsymbol{s}_0$};
+ 	\node[main] (s1)[above=of p1] {$\boldsymbol{s}_1$};
+ 	\node[main] (s2)[above=of p2] {$\boldsymbol{s}_2$};
+ 	\node[main] (s3)[above=of p3] {$\boldsymbol{s}_3$};
+ 	
+ 	% Skill input
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_0;\boldsymbol{\mu}_0.\ \boldsymbol{\sigma}_0^2)$] ()[above=of s0] {}
+ 		edge [] (s0);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_1;\boldsymbol{\mu}_1.\ \boldsymbol{\sigma}_1^2)$] ()[above=of s1] {}
+ 		edge [] (s1);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_2;\boldsymbol{\mu}_2.\ \boldsymbol{\sigma}_2^2)$] ()[above=of s2] {}
+ 		edge [] (s2);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_3;\boldsymbol{\mu}_3.\ \boldsymbol{\sigma}_3^2)$] ()[above=of s3] {}
+ 		edge [] (s3);
+ 		
+ 	% Skill to performance
+ 	\node[factor, label=left:$\mathcal{N}(\boldsymbol{p}_0;\boldsymbol{\mu}_{\theta}(\boldsymbol{s}_0).\ \boldsymbol{\sigma}_{\theta}^2(\boldsymbol{s_0}))$] () [above=of p0] {}
+ 		edge [] (s0)
+ 		edge [] (p0);
+ 	\node[factor, label=left:$\mathcal{N}(\boldsymbol{p}_1;\boldsymbol{\mu}_{\theta}(\boldsymbol{s}_1).\ \boldsymbol{\sigma}_{\theta}^2(\boldsymbol{s_1}))$] () [above=of p1] {}
+ 		edge [] (s1)
+ 		edge [] (p1);
+ 	\node[factor, label=left:$\mathcal{N}(\boldsymbol{p}_2;\boldsymbol{\mu}_{\theta}(\boldsymbol{s}_2).\ \boldsymbol{\sigma}_{\theta}^2(\boldsymbol{s_2}))$] () [above=of p2] {}
+ 		edge [] (s2)
+ 		edge [] (p2);
+ 	\node[factor, label=left:$\mathcal{N}(\boldsymbol{p}_3;\boldsymbol{\mu}_{\theta}(\boldsymbol{s}_3).\ \boldsymbol{\sigma}_{\theta}^2(\boldsymbol{s_3}))$] () [above=of p3] {}
+ 		edge [] (s3)
+ 		edge [] (p3);
+ 		
+ 	% Performance to team
+ 	\node[factor, label=190:$\mathcal{N}(\boldsymbol{t}_0;\boldsymbol{\mu}_{\phi}(\boldsymbol{p}_0.\ \boldsymbol{p}_1).\ 
+ 														  \boldsymbol{\sigma}_{\phi}^2(\boldsymbol{p}_0.\ \boldsymbol{p}_1))$] () [above=of t0] {}
+ 		edge [] (p0)
+ 		edge [] (p1)
+ 		edge [] (t0);
+ 	\node[factor, label=190:$\mathcal{N}(\boldsymbol{t}_1;\boldsymbol{\mu}_{\phi}(\boldsymbol{p}_2.\ \boldsymbol{p}_3).\ 
+ 														  \boldsymbol{\sigma}_{\phi}^2(\boldsymbol{p}_2.\ \boldsymbol{p}_3))$] () [above=of t1] {}
+ 		edge [] (p2)
+ 		edge [] (p3)
+ 		edge [] (t1);
+ 		
+ 	% Team results
+ 	\node[factor, label=above:$\text{Bern}(\boldsymbol{p}_{\psi}(\boldsymbol{t}_0.\ \boldsymbol{t}_1))$] () [above=of y] {}
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (y);
+ 	
+ 	% Player results
+ 	\node[factor, label=left:$\text{gamma}(\boldsymbol{c}_{\gamma}(\boldsymbol{p}_0.\ \boldsymbol{t}_0.\ \boldsymbol{t}_1).\ 
+ 										  \boldsymbol{\lambda}_{\gamma}(\boldsymbol{p}_0.\ \boldsymbol{t}_0.\ \boldsymbol{t}_1))$] () [above=of x0] {}
+ 		edge [] (p0)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x0);
+ 	\node[factor, label=left:$\text{gamma}(\boldsymbol{c}_{\gamma}(\boldsymbol{p}_1.\ \boldsymbol{t}_0.\ \boldsymbol{t}_1).\ 
+ 										  \boldsymbol{\lambda}_{\gamma}(\boldsymbol{p}_1.\ \boldsymbol{t}_0.\ \boldsymbol{t}_1))$] () [above=of x1] {}
+ 		edge [] (p1)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x1);
+ 	\node[factor, label=left:$\text{gamma}(\boldsymbol{c}_{\gamma}(\boldsymbol{p}_2.\ \boldsymbol{t}_1.\ \boldsymbol{t}_0).\ 
+ 										  \boldsymbol{\lambda}_{\gamma}(\boldsymbol{p}_2.\ \boldsymbol{t}_1.\ \boldsymbol{t}_0))$] () [above=of x2] {}
+ 		edge [] (p2)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x2);
+ 	\node[factor, label=left:$\text{gamma}(\boldsymbol{c}_{\gamma}(\boldsymbol{p}_3.\ \boldsymbol{t}_1.\ \boldsymbol{t}_0).\ 
+ 										  \boldsymbol{\lambda}_{\gamma}(\boldsymbol{p}_3.\ \boldsymbol{t}_1.\ \boldsymbol{t}_0))$] () [above=of x3] {}
+ 		edge [] (p3)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x3);
+\end{tikzpicture}
+\caption{Example of a factor graph}
+\end{figure}
+\end{landscape}
 \chapter{Project Proposal}
 
 \end{document}
