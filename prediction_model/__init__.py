@@ -34,5 +34,6 @@ PLAYERS_PER_TEAM = 5
 NUM_OF_TEAMS = 2
 PLAYER_RESULT_DIM = 8
 TEAM_RESULTS_DIM = 2
+BATCH_SIZE = 1
 
 print("Initialisation finished")

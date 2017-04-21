@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Dense, Dropout
 
-from prediction_model import PLAYERS_PER_TEAM, PLAYERS, PLAYER_DIM, MATCHES
+from prediction_model import PLAYERS_PER_TEAM, PLAYERS, PLAYER_DIM, MATCHES, MATCH_LIST
 
 
 class Stats(Enum):
@@ -29,14 +29,21 @@ def min_log(tensor):
 
 def log_normal(x, mu, sigma):
     error = -(tf.pow((x - mu) / sigma, 2) / 2 + min_log(sigma) + min_log(2 * np.pi) / 2)
-    error = tf.squeeze(error)
-    return tf.reduce_sum(error, 0)
+    # error = tf.squeeze(error)
+    return tf.reduce_sum(error, 1)
+
+
+def log_bernoulli(y, p):
+    p = tf.clip_by_value(p, 1e-8, 1 - 1e-8)
+    result = y * tf.log(p) + (1 - y) * tf.log(1 - p)
+    return tf.reduce_sum(result, 1)
 
 
 def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activation='relu'):
     p = keras.models.Sequential()
-    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, activation=first_activation))
-    p.add(Dense(units=out_dim, activation='linear'))
+    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, activation=first_activation,
+                kernel_initializer='random_normal'))
+    p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
     if dropout:
         p.add(Dropout(.2))
     return p
@@ -44,6 +51,7 @@ def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activati
 
 def make_mu_and_sigma(nn, tensor):
     mu, log_sigma = tf.split(nn(tensor), num_or_size_splits=2, axis=1)
+    log_sigma = tf.clip_by_value(log_sigma, -5, 5)
     sigma = tf.exp(log_sigma)
     return mu, sigma
 
@@ -107,12 +115,27 @@ def get_match_arrays(match_id):
         if player_id not in PLAYERS:
             PLAYERS[player_id] = [0] * PLAYER_DIM + [1] * PLAYER_DIM
         player_skills.append(PLAYERS[player_id])
+    if "radiant_win" not in match_stats["match_data"]:
+        match_stats["match_data"]["radiant_win"] = True
     if match_stats["match_data"]["radiant_win"]:
         team_results = [1, 0]
     else:
         team_results = [0, 1]
     return {
-        "player_skills": [player_skills],
-        "player_results": [player_results],
-        "team_results": [team_results]
+        "player_skills": player_skills,
+        "player_results": player_results,
+        "team_results": team_results
     }
+
+
+def get_batch(seed, batch_size):
+    batch = {"player_skills": [],
+             "player_results": [],
+             "team_results": []}
+    for i in range(batch_size):
+        match_id = MATCH_LIST[(seed + i) % len(MATCH_LIST)]
+        data = get_match_arrays(match_id)
+        batch["player_skills"].append(data["player_skills"])
+        batch["player_results"].append(data["player_results"])
+        batch["team_results"].append(data["team_results"])
+    return batch
