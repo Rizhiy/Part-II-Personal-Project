@@ -3,7 +3,8 @@ from enum import Enum
 import keras
 import numpy as np
 import tensorflow as tf
-from keras.layers import Dense, Dropout
+from keras.layers import Dense, Dropout, warnings
+from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYERS, PLAYER_DIM, MATCHES, MATCH_LIST
 
@@ -24,19 +25,24 @@ class Stats(Enum):
 
 
 def min_log(tensor):
-    return tf.log(tensor + 1e-8)
+    return tf.log(tf.clip_by_value(tensor, 1e-8, np.infty))
 
 
 def log_normal(x, mu, sigma):
     error = -(tf.pow((x - mu) / sigma, 2) / 2 + min_log(sigma) + min_log(2 * np.pi) / 2)
-    # error = tf.squeeze(error)
     return tf.reduce_sum(error, 1)
 
 
 def log_bernoulli(y, p):
     p = tf.clip_by_value(p, 1e-8, 1 - 1e-8)
-    result = y * tf.log(p) + (1 - y) * tf.log(1 - p)
+    result = y * min_log(p) + (1 - y) * min_log(1 - p)
     return tf.reduce_sum(result, 1)
+
+
+def log_gamma(x, alpha, beta):
+    # TODO: Check tf.lgamma
+    error = alpha * min_log(beta) - tf.lgamma(alpha) + (alpha - 1) * min_log(tf.cast(x, tf.float32)) - beta * x
+    return tf.reduce_sum(error, 1)
 
 
 def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activation='relu'):
@@ -101,10 +107,10 @@ def get_match_arrays(match_id):
     player_results = []
     players_stats = match_stats["radiant_players"] + match_stats["dire_players"]
     for idx, player_stat in enumerate(players_stats):
-        player_result = [player_stat[Stats.KILLS.value], player_stat[Stats.DEATHS.value],
-                         player_stat[Stats.ASSISTS.value], player_stat[Stats.LEVEL.value],
-                         player_stat[Stats.GPM.value], player_stat[Stats.XPM.value],
-                         player_stat[Stats.CREEPS.value], player_stat[Stats.DENIES.value]]
+        player_result = [player_stat[Stats.GPM.value], player_stat[Stats.XPM.value],
+                         player_stat[Stats.CREEPS.value], player_stat[Stats.DENIES.value],
+                         player_stat[Stats.KILLS.value], player_stat[Stats.DEATHS.value],
+                         player_stat[Stats.ASSISTS.value], player_stat[Stats.LEVEL.value]]
         player_results.append(player_result)
         if idx < PLAYERS_PER_TEAM:
             radiant_ids.append(player_stat["account_id"])
@@ -133,9 +139,50 @@ def get_batch(seed, batch_size):
              "player_results": [],
              "team_results": []}
     for i in range(batch_size):
-        match_id = MATCH_LIST[(seed + i) % len(MATCH_LIST)]
+        match_id = MATCH_LIST[(seed * batch_size + i) % len(MATCH_LIST)]
         data = get_match_arrays(match_id)
         batch["player_skills"].append(data["player_skills"])
         batch["player_results"].append(data["player_results"])
         batch["team_results"].append(data["team_results"])
+    return batch
+
+
+DATASET = {"player_skills": {},
+           "player_results": {},
+           "team_results": {}}
+
+
+def create_data_set():
+    """
+    Standardise player results
+    """
+    for match_id in MATCH_LIST:
+        data = get_match_arrays(match_id)
+        DATASET["player_skills"][match_id] = data["player_skills"]
+        DATASET["player_results"][match_id] = data["player_results"]
+        DATASET["team_results"][match_id] = data["team_results"]
+
+    results = []
+    for match_id in DATASET["player_results"]:
+        for i in DATASET["player_results"][match_id]:
+            results.append(i)
+    scalar = MinMaxScaler(feature_range=(0, 10))
+    scalar.fit(results)
+    # temp fix, not fixing since not gonna use this in the future
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    for match_id in DATASET["player_results"]:
+        for idx, stats in enumerate(DATASET["player_results"][match_id]):
+
+            DATASET["player_results"][match_id][idx] = scalar.transform(stats)
+
+
+def get_new_batch(seed, batch_size):
+    batch = {"player_skills": [],
+             "player_results": [],
+             "team_results": []}
+    for i in range(batch_size):
+        match_id = MATCH_LIST[(seed * batch_size + i) % len(MATCH_LIST)]
+        batch["player_skills"].append(DATASET["player_skills"][match_id])
+        batch["player_results"].append(DATASET["player_results"][match_id])
+        batch["team_results"].append(DATASET["team_results"][match_id])
     return batch

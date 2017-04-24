@@ -1,6 +1,8 @@
 import json
 import pprint
 
+import numpy as np
+
 GAMES_TO_USE = "matches50"
 MATCH_FOLDER = "../all_matches"
 
@@ -28,12 +30,16 @@ PLAYERS = {}
 
 PP = pprint.PrettyPrinter(indent=2)
 
-PLAYER_DIM = 10
-TEAM_DIM = 10
-PLAYERS_PER_TEAM = 5
-NUM_OF_TEAMS = 2
+BATCH_SIZE = 128
 PLAYER_RESULT_DIM = 8
 TEAM_RESULTS_DIM = 2
-BATCH_SIZE = 1
+PLAYER_DIM = 1 * PLAYER_RESULT_DIM
+TEAM_DIM = 2 * PLAYER_DIM
+
+PLAYERS_PER_TEAM = 5
+NUM_OF_TEAMS = 2
+
+# Print options for numpy arrays
+np.set_printoptions(precision=3, suppress=True)
 
 print("Initialisation finished")
