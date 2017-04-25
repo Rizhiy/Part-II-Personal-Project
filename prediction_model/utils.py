@@ -33,6 +33,11 @@ def log_normal(x, mu, sigma):
     return tf.reduce_sum(error, 1)
 
 
+def entropy(sigma):
+    entropy = min_log(2 * np.pi) / 2 + min_log(sigma) + 1
+    return tf.reduce_sum(entropy, 1)
+
+
 def log_bernoulli(y, p):
     p = tf.clip_by_value(p, 1e-8, 1 - 1e-8)
     result = y * min_log(p) + (1 - y) * min_log(1 - p)
@@ -172,7 +177,6 @@ def create_data_set():
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     for match_id in DATASET["player_results"]:
         for idx, stats in enumerate(DATASET["player_results"][match_id]):
-
             DATASET["player_results"][match_id][idx] = scalar.transform(stats)
 
 

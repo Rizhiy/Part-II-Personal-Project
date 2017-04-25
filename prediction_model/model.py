@@ -4,7 +4,7 @@ import tensorflow as tf
 from prediction_model import PLAYER_DIM, PLAYERS_PER_TEAM, NUM_OF_TEAMS, PLAYER_RESULT_DIM, TEAM_RESULTS_DIM, TEAM_DIM, \
     BATCH_SIZE
 from prediction_model.utils import make_mu_and_sigma, make_sql_nn, log_normal, log_bernoulli, create_data_set, \
-    get_new_batch, log_gamma
+    get_new_batch, log_gamma, entropy
 
 sess = tf.Session()
 
@@ -49,6 +49,7 @@ team1_performance_mu, team1_performance_sigma = make_mu_and_sigma(result_to_team
 team1_performance = team1_performance_mu + team1_performance_sigma * team1_epsilon
 
 player_performance = []
+player_performance_sigma = []
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     if i < PLAYERS_PER_TEAM:
         team_performance = team0_performance
@@ -58,6 +59,7 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     player_performance_input = tf.concat([player_results_split[i], team_performance],
                                          axis=1)
     mu, sigma = make_mu_and_sigma(player_skill_nn, player_performance_input)
+    player_performance_sigma.append(sigma)
     player_performance.append(mu + sigma * player_epsilons[i])
 
 player_to_team0_input = []
@@ -96,8 +98,9 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     log_result += first
     # test_result.append(tf.reduce_mean(first))
     mu, sigma = tf.split(player_skills_split[i], 2, axis=1)
-    second = log_normal(player_performance[i], mu, sigma)
-    log_result += second
+    # second = log_normal(player_performance[i], mu, sigma)
+    second = entropy(player_performance_sigma[i])
+    log_result -= second
     # test2_result.append(tf.reduce_mean(second))
 
 log_result += log_bernoulli(team_results, tf.sigmoid(team_result_logit))
@@ -105,8 +108,10 @@ log_result += log_bernoulli(team_results, tf.sigmoid(team_result_logit))
 log_result += log_normal(team0_performance, player_to_team0_mu, player_to_team0_sigma)
 log_result += log_normal(team1_performance, player_to_team1_mu, player_to_team1_sigma)
 
-log_result += log_normal(team0_performance, team0_performance_mu, team0_performance_sigma)
-log_result += log_normal(team1_performance, team1_performance_mu, team1_performance_sigma)
+# log_result -= log_normal(team0_performance, team0_performance_mu, team0_performance_sigma)
+# log_result -= log_normal(team1_performance, team1_performance_mu, team1_performance_sigma)
+log_result -= entropy(team0_performance_sigma)
+log_result -= entropy(team1_performance_sigma)
 
 loss = -tf.reduce_mean(log_result)
 
@@ -127,7 +132,7 @@ for i in range(int(1e6)):
                                                     team_results: batch["team_results"]})
     if np.math.isnan(loss_step):
         break
-    if i % 1000 == 0:
+    if i % 100 == 0:
         print()
         print("iteration: {:6d}, loss: {:10.0f}".format(i, loss_step))
         print("result:    {}".format(test[0]))
