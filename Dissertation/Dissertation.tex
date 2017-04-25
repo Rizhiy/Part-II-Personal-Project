@@ -31,6 +31,7 @@
 
 % New commands
 \newcommand\college{Clare College}
+\newcommand*\mean[1]{\overline{#1}}
 
 % Display JSON nicely
 \usepackage{listings}
@@ -147,6 +148,7 @@ Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianrank
 Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of the game.
 %TODO Write more here
 
+
 \chapter{Preparation}
 \section{Types of variables to predict}
 Values included in the game statistic can be rougle separated into two types: class based and regression based.
@@ -179,14 +181,15 @@ At the beginning of the project I had:
 \begin{itemize}
 \item Basic knowledge of artificial intelligence from \emph{Artificial Intelligence I} Part IB course.
 \item Programming experience in Python (acquired by working on personal projects) and Java (acquired by completing courses in first two years of my study).
+\item Knowledge of probability and Bayes' theorem from A-Level maths and math courses in the first two years.
 %TODO
 \end{itemize}
 During the course of the project I had to gain following qualities:
 \begin{itemize}
+\item Understanding of Bayes' inference and its use in ranking.
 \item Understanding of various machine learning techniques.
-\item Familiarity with a chosen ML library.
-\item Understanding of theory behind ranking algorithms.
-\item Learn \LaTeX\ and related packages (such as Tikz for graphs) to write-up this dissertation.
+\item Familiarity with a chosen ML library (Tensorflow).
+\item Knowledge of \LaTeX\ and related packages (such as Tikz for graphs) to write-up this dissertation.
 %TODO
 \end{itemize}
 \section{Theoretical Background}
@@ -241,7 +244,38 @@ Pycharm was chosen the integrated development environment (IDE) for the project.
 Pycharm has all of the core features of an IDE, such as syntax checking, autocompletion, running of code, etc.
 The use of an IDE streamlined the process of development and allowed me to focus on improving the algorithm rather than worrying about language syntax or library functions signatures. 
 
+
 \chapter{Implementation}
+\section{Data Collection and Pre-processing}
+\subsection{Collecting the data}
+To train and evaluate my algorithm I had to find a complex dataset which would have different types of variables for me to predict.
+I decided to use game called "Dota 2" for several reasons:
+\begin{itemize}
+\item Summary of each professional game is publicly available and easily accessible through the provided API.
+\item "Dota 2" is one of the leading E-Sports with hundreds of professional matches each year, which provided me with plenty of data points.
+\item The game is requires a lot of skill with very little amount of luck involved, which makes it much suitable to prediction.
+\item The game is team-based and requires a lot of co-operation, which makes it more difficult to predict using classical rating algorithms.
+\end{itemize}
+\subsection{Pre-processing}
+\paragraph{Cleaning the data}
+The API which provides the summaries sometimes returns incomplete data with some of the values, such as the outcome of the match, missing.
+I had to find and remove all data points which did not contain complete set of results.
+\paragraph{Standardisation}
+Some of the variables in the summary occur over much bigger scales than others.
+Most machine learning algorithms would not train properly and would prioritise predicting large variables more accurately than smaller ones.
+I would like to consider all variables with equal priority there I had to normalise the data.
+To normalise data we can a apply a simple transformation to all data points:
+\begin{equation}
+x' = \frac{x - \mean{x}}{\sigma}
+\end{equation}
+Where $\mean{x}$ is the mean of $x$ and $\sigma$ is its standard deviation
+\paragraph{Normalisation}
+During the analysis of data I decided that the data is better modelled using a gamma distribution.
+Gamma distribution can only represent positive numbers, therefore I could not use standardisation for this dataset.
+Instead I used normalisation which also rescales the values, but keeps them all positive, it uses the following transformation:
+\begin{equation}
+x' = \frac{x - \min(x)}{\max(x)-\min(x)}
+\end{equation}
 \section{First Prototype}
 The main problem in machine learning is frequently generation of correct features to represent the data.
 In my case I had statistics of more than twenty thousand games.
@@ -272,7 +306,7 @@ This approach generated much better results than simple mean and variance, with 
 Although this is much better than previous results, it is still far from required value of 0.75.
 
 \subsection{Analysis of the prototype}
-\begin{figure}[h]
+\begin{figure}[ht]
 \centering
 \includegraphics[scale=0.5]{predicted_assists}
 \caption{Distribution of predicted values vs.\ actual variable distribution}
@@ -284,17 +318,46 @@ In addition, most of the machine learning techniques had similar predictive perf
 These two facts combined led me to believe that the problem is again with quality of features.
 Therefore, I decided to create my own graphical model to generate richer features.
 \section{Final System}
+\subsection{Neural networks}
+\subsection{Choosing distributions for variables}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{fitted-distributions}
+\caption{Fitted gaussian and gamma distributions, since gamma distribution has lower $\chi^2$ value, it is a better fit.}
+\label{fig:fitted-distributions}
+\end{figure}
+When predicting the values for each variable, rather than predicting the probability for each value independently, it is better to use a distribution to predict the probabilities for all values.
+To decide which distribution fits each variable best, I used \emph{method of moments} to fit each potential distribution to all observed values of the variable.
+Then I used \emph{goodness of fit} to decide which of the potential distributions is best.
+\paragraph{Method of Moments}
+To fit a distribution we need to estimate its parameters.
+Parameters for most distributions can be easily expressed in terms of mean and variance of the data.
+For example for Gamma distribution the equations are:
+\begin{equation}
+\alpha = \mu^2/\sigma^2
+\qquad
+\beta = \mu/\sigma^2
+\end{equation}
+\paragraph{Goodness of fit}
+To estimate how well the distribution fits the data we can use chi-squared test to measure sum of differences between observed and expected outcome frequencies:
+\begin{equation}
+\chi^2 = \sum_{i=1}^{n} \frac{(O_i - E_i)^2}{E_i}
+\end{equation}
+Where $O_i$ is the observed frequency and $E_i$ is the expected frequency.
 \subsection{Player skills}
 Every game is different and trying to pick specific set of skills for each one, would not be practical.
 Therefore, I decided to make an assumption that players skill in a game can be described by $n$ real numbers.
 Such $n$ will be different for each game and therefore is a hyper parameter in my model.
 Since the system can never be sure on the exact skill values for each player, skills of each player are represented as $n$ Gaussian distributions.
-\subsection{Neural networks}
-\subsection{Choosing distributions for variables}
-\subsection{Updating skill values}
-\subsection{Prediction}
-To predict the values for a particular match-up we just need to take the set of skills corresponding to players in the match-up and feed them into the top of the model.
-
+\subsection{Model}
+Training both the inner model for statistic prediction and model for player skill updates at the same time would greatly increase the data required for processing.
+It will also raise some difficult problem such as \emph{vanishing gradient}, unfortunately I did not have enough time to solve them properly.
+Instead I decided to use the technique called \emph{coordinate descent}.
+\paragraph{Coordinate descent}
+When we have multiple parameters to optimise, instead of optimising them at the same time we can optimise them alternatively.
+We optimise each parameter for a certain number of iterations (or until some criteria is achieved) and then move onto the next parameter.
+Once we optimised each parameter, we can loop back and start again from the first one.
+We do that until all parameters reach sufficiently stable values.
 \begin{figure}[ht]
 \centering
 \begin{tikzpicture}
@@ -302,20 +365,20 @@ To predict the values for a particular match-up we just need to take the set of 
 	\node[obs] (y) [] {$y$};	
 	
 	% Team performances
-	\node[latent] (t0)[above=2cm of y, xshift=-5cm] {$\boldsymbol{t}_0$};
-	\node[latent] (t1)[above=2cm of y, xshift=5cm] {$\boldsymbol{t}_1$};
+	\node[latent] (t0)[above=2cm of y, xshift=-4cm] {$\boldsymbol{t}_0$};
+	\node[latent] (t1)[above=2cm of y, xshift=4cm] {$\boldsymbol{t}_1$};
 	
 	% Player results
- 	\node[obs] (x0)[below= 2cm of t0, xshift=-2cm] {$\boldsymbol{x}_0$};
- 	\node[obs] (x1)[below= 2cm of t0, xshift=2cm] {$\boldsymbol{x}_1$};
- 	\node[obs] (x2)[below= 2cm of t1, xshift=-2cm] {$\boldsymbol{x}_2$};
- 	\node[obs] (x3)[below= 2cm of t1, xshift=2cm] {$\boldsymbol{x}_3$};
+ 	\node[obs] (x0)[below= 2cm of t0, xshift=-1.5cm] {$\boldsymbol{x}_0$};
+ 	\node[obs] (x1)[below= 2cm of t0, xshift=1.5cm] {$\boldsymbol{x}_1$};
+ 	\node[obs] (x2)[below= 2cm of t1, xshift=-1.5cm] {$\boldsymbol{x}_2$};
+ 	\node[obs] (x3)[below= 2cm of t1, xshift=1.5cm] {$\boldsymbol{x}_3$};
  	
  	% Player performances
- 	\node[latent] (p0)[above=of t0, xshift=-2cm] {$\boldsymbol{p}_0$};
- 	\node[latent] (p1)[above=of t0, xshift=2cm] {$\boldsymbol{p}_1$};
- 	\node[latent] (p2)[above=of t1, xshift=-2cm] {$\boldsymbol{p}_2$};
- 	\node[latent] (p3)[above=of t1, xshift=2cm] {$\boldsymbol{p}_3$};
+ 	\node[latent] (p0)[above=of t0, xshift=-1.5cm] {$\boldsymbol{p}_0$};
+ 	\node[latent] (p1)[above=of t0, xshift=1.5cm] {$\boldsymbol{p}_1$};
+ 	\node[latent] (p2)[above=of t1, xshift=-1.5cm] {$\boldsymbol{p}_2$};
+ 	\node[latent] (p3)[above=of t1, xshift=1.5cm] {$\boldsymbol{p}_3$};
  	
  	% Player skills
  	\node[latent] (s0)[above=of p0] {$\boldsymbol{s}_0$};
@@ -346,6 +409,10 @@ To predict the values for a particular match-up we just need to take the set of 
 \end{tikzpicture}
 \caption{An example of an inference model for four players in two teams.}
 \end{figure}
+\subsection{Prediction}
+To predict the values for a particular match-up we just need to take the set of skills corresponding to players in the match-up and feed them into the top of the model.
+
+
 
 
 \chapter{Evaluation}
