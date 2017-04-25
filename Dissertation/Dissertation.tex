@@ -21,6 +21,8 @@
 % Graphical Models
 \usepackage{tikz}
 \usetikzlibrary{fit,positioning,bayesnet}
+\usetikzlibrary{arrows}
+
 \usepackage{amsmath}
 % Use full stop for comma
 \mathchardef\period=\mathcode`.
@@ -193,14 +195,25 @@ During the course of the project I had to gain following qualities:
 %TODO
 \end{itemize}
 \section{Theoretical Background}
-\subsection{Rating Algorithms}
-
 \subsection{Machine Learning}
 Machine learning allows computers to make predictions on data by learning on past examples and without being explicitly programmed.
 The aim of my project was to create an algorithm which could work with any game, therefore machine learning was the perfect set of techniques to apply.
 
 Since I decided to use machine learning in my project I had to get some background in the area.
 Unfortunately, computer science course is in Lent term, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning work on the theory.
+
+After I have finished my research, I have decided to try the following machine learning techniques in my projeject:
+\begin{itemize}
+\item Naive bayes (NB)
+\item Linear Regression (LinReg)
+\item Logistic Regression (LogReg)
+\item Polynomial Regression (PolReg)
+\item Ridge Regression (RidReg)
+\item Neural Networks (NN)
+\item Support Vector Machines (SVM)
+\item Gaussian Processes (GP)
+\item Random Forests (RF)
+\end{itemize}
 \section{Software Engineering}
 \subsection{Workflow}
 I have decided to use an agile approach of working on this project, since I was not sure exactly how the algorithm should work at the start of the project.
@@ -222,6 +235,8 @@ The repository was hosted on GitHub\footnote{github.com} which allowed me to wor
 \subsection{Backup}
 The code was continuously synchronised to Dropbox\footnote{dropbox.com}.
 Weekly checkpoints were saved to an external hard drive.
+\subsection{Testing}
+Testing will be done using standard train-validation-test method.
 \section{Tools used}
 \subsection{Programming Language and ML Libraries}
 Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
@@ -235,7 +250,9 @@ I took note of quality of documentation and also compared number of questions an
 In the end I have arrived at the conclusion that they all provided required functionality and were sufficiently easy to use.
 API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a library, therefore I decided to use TensorFlow, API for which was written in Python, a language I am most comfortable writing code in.
-TensorFlow is a low-level library, in which you have to construct each layer of neural network explicitly, I did not need that level of customisation, therefore I used Keras to help me build the neural networks.
+TensorFlow is a low-level library, in which you have to construct each layer of neural network explicitly, I did not need that level of customisation, therefore I used Keras\footnote{keras.io} to help me build the neural networks.
+
+Additionaly Python has a higher level machine learning library called scikit-learn\footnote{scikit-learn.org}, which provides easy way to quickly implement many machine learning methods.
 
 To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip}, which makes it much easier to install additional packages.
 
@@ -246,6 +263,17 @@ The use of an IDE streamlined the process of development and allowed me to focus
 
 
 \chapter{Implementation}
+\section{Installation of required libraries}
+Python has a package index (PyPI) which is used to distribute most available packages.
+The developers of PyPI provide a tool called \emph{pip} which can manage package installation for you, it can be installed on Ubuntu using:
+\begin{lstlisting}[language=bash]
+sudo apt install python3-pip
+\end{lstlisting}
+After pip is installed all required packages can be installed using:
+\begin{lstlisting}[language=bash]
+sudo pip install <package name>
+\end{lstlisting}
+Pip will manage all of the required dependencies and put the package files in the correct directories.
 \section{Data Collection and Pre-processing}
 \subsection{Collecting the data}
 To train and evaluate my algorithm I had to find a complex dataset which would have different types of variables for me to predict.
@@ -292,7 +320,7 @@ All of the methods had similar performance, which indicated that features genera
 To improve the features I first tried putting a limit on how many games were used to calculate player's mean and average, while this improved performance a bit, it was still very poor.
 Next thing to try was rating players based on their performance in each variable.
 
-\subsection{Rating of results}
+\subsection{Rating of players}
 The easiest algorithm to use for rating players was TrueSkill, since it offered rating games with multiple players and there was a library\footnote{trueskill.org} for python which provided the functionality.
 Trueskill only uses the final ranking of the individual at the end of the game, rather than absolute value, therefore some informations is lost.
 This also meant that I had to do further processing on the data to convert raw statistic into ranks.
@@ -304,6 +332,15 @@ This meant that resulting ratings were very accurate.
 Player ranks were then used as features for machine learning techniques.
 This approach generated much better results than simple mean and variance, with best variable achieving $R^2$ value of 0.47.
 Although this is much better than previous results, it is still far from required value of 0.75.
+
+\subsection{Analysis of different machine learning techniques}
+As said above most of the techniques provided similar results.
+In the end I decided to use neural networks as my main technique for the following reasons:
+\begin{itemize}
+\item Neural networks can do both regression and classification, thereby I will only have to focus on learning and understanding one technique.
+\item One neural network can estimate values for multiple results, thereby reducing the complexity of the system and increasing efficiency.
+\item Chosen library (Tensorflow) has better support for neural networks than other techniques.
+\end{itemize}
 
 \subsection{Analysis of the prototype}
 \begin{figure}[ht]
@@ -318,7 +355,6 @@ In addition, most of the machine learning techniques had similar predictive perf
 These two facts combined led me to believe that the problem is again with quality of features.
 Therefore, I decided to create my own graphical model to generate richer features.
 \section{Final System}
-\subsection{Neural networks}
 \subsection{Choosing distributions for variables}
 \begin{figure}[ht]
 \centering
@@ -349,8 +385,48 @@ Every game is different and trying to pick specific set of skills for each one, 
 Therefore, I decided to make an assumption that players skill in a game can be described by $n$ real numbers.
 Such $n$ will be different for each game and therefore is a hyper parameter in my model.
 Since the system can never be sure on the exact skill values for each player, skills of each player are represented as $n$ Gaussian distributions.
+\subsection{Neural networks}
+
 \subsection{Model}
-Training both the inner model for statistic prediction and model for player skill updates at the same time would greatly increase the data required for processing.
+\begin{figure}
+\centering
+\begin{tikzpicture}
+\tikzset{edge/.style = {->,> = latex'}}
+\node[latent] (p) [] {$p_i^j$};
+
+\node[latent] (t) [below=of p] {$t_j$};
+\draw[edge] (p) to (t);
+
+\node[obs] (x) [right=of p] {$x_i^j$};
+\draw[edge] (p) to (x);
+\draw[edge] (t) to (x);
+
+\node[obs] (y) [right=3cm of t] {$y$};
+\draw[edge] (t) to (y);
+
+\plate {i} {(p)(x)} {$i\subset j$};
+\plate[inner sep=0.3cm] {j} {(p)(x)(t)} {$j\subset T$};
+\plate[inner sep=0.5cm] {m} {(p)(x)(t)(y)} {$m\subset M$};
+
+\node[latent] (s) [left=of p] {$s_n$};
+\draw[edge] (s) to (p);
+\plate {n} {(s)} {$n\subset N$};
+\end{tikzpicture}
+\caption{Summed up view of the model.
+There are $N$ players tracked by the system, participating in $M$ matches.
+In each match there are $T$ teams.
+$x_i$ are the player results and $y$ are the overall match results.
+All nodes represent vectors.}
+\label{fig:model-simple}
+\end{figure}
+The model assumes that there are two types of results for each game:
+\begin{itemize}
+\item Player specific results, such as amount of gold earned or number of enemies killed.
+\item Overall game results, such as which team won or how long the game took.
+\end{itemize}
+The model further assumes that player specific results depend on skills of the relevant player and skills of each teams, and overall results only depend on skills of each team.
+This dependencies are seen in figure \ref{fig:model-simple}.
+Training both the inner model for statistic prediction and model for player skill updates at the same time would greatly increase the data required for processing. %TODO check this
 It will also raise some difficult problem such as \emph{vanishing gradient}, unfortunately I did not have enough time to solve them properly.
 Instead I decided to use the technique called \emph{coordinate descent}.
 \paragraph{Coordinate descent}
