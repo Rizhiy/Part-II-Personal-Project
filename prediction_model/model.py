@@ -1,10 +1,12 @@
+import sys
+
 import numpy as np
 import tensorflow as tf
 
 from prediction_model import PLAYER_DIM, PLAYERS_PER_TEAM, NUM_OF_TEAMS, PLAYER_RESULT_DIM, TEAM_RESULTS_DIM, TEAM_DIM, \
     BATCH_SIZE
 from prediction_model.utils import make_mu_and_sigma, make_sql_nn, log_normal, log_bernoulli, create_data_set, \
-    get_new_batch, log_gamma
+    get_new_batch, log_gamma, make_k_and_theta
 
 sess = tf.Session()
 
@@ -72,19 +74,17 @@ for i in range(PLAYERS_PER_TEAM):
 player_to_team1_input = tf.concat(player_to_team1_input, axis=1)
 player_to_team1_mu, player_to_team1_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team1_input)
 
-player_to_results_alpha = []
-player_to_results_beta = []
+player_to_results_k = []
+player_to_results_theta = []
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     if i < PLAYERS_PER_TEAM:
         team_performances = tf.concat([team0_performance, team1_performance], axis=1)
     else:
         team_performances = tf.concat([team1_performance, team0_performance], axis=1)
     player_to_result_input = tf.concat([player_performance[i], team_performances], axis=1)
-    alpha, beta = make_mu_and_sigma(player_result_nn, player_to_result_input)
-    alpha = tf.clip_by_value(alpha, 1e-8, np.infty)
-    beta = tf.clip_by_value(beta, 1e-8, np.infty)
-    player_to_results_alpha.append(alpha)
-    player_to_results_beta.append(beta)
+    k, theta = make_k_and_theta(player_result_nn, player_to_result_input)
+    player_to_results_k.append(k)
+    player_to_results_theta.append(theta)
 
 team_result_logit = team_result_nn(tf.concat([team0_performance, team1_performance], axis=1))
 
@@ -92,7 +92,7 @@ team_result_logit = team_result_nn(tf.concat([team0_performance, team1_performan
 # test2_result = []
 log_result = 0
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
-    first = log_gamma(player_results_split[i], player_to_results_alpha[i], player_to_results_beta[i])
+    first = log_gamma(player_results_split[i], player_to_results_k[i], player_to_results_theta[i])
     log_result += first
     # test_result.append(tf.reduce_mean(first))
     mu, sigma = tf.split(player_skills_split[i], 2, axis=1)
@@ -111,7 +111,7 @@ log_result += log_normal(team1_performance, team1_performance_mu, team1_performa
 loss = -tf.reduce_mean(log_result)
 
 test_result = player_results_split[0]
-test2_result = player_to_results_alpha[0] / player_to_results_beta[0]
+test2_result = player_to_results_k[0] * player_to_results_theta[0]
 
 train_step = tf.train.AdamOptimizer().minimize(loss)
 init = tf.global_variables_initializer()
@@ -126,6 +126,7 @@ for i in range(int(1e6)):
                                                     player_results: batch["player_results"],
                                                     team_results: batch["team_results"]})
     if np.math.isnan(loss_step):
+        print("Nan loss", file=sys.stderr)
         break
     if i % 1000 == 0:
         print()

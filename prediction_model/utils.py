@@ -28,6 +28,10 @@ def min_log(tensor):
     return tf.log(tf.clip_by_value(tensor, 1e-8, np.infty))
 
 
+def clip_exp(tensor):
+    return tf.exp(tf.clip_by_value(tensor, -5, 5))
+
+
 def log_normal(x, mu, sigma):
     error = -(tf.pow((x - mu) / sigma, 2) / 2 + min_log(sigma) + min_log(2 * np.pi) / 2)
     return tf.reduce_sum(error, 1)
@@ -39,9 +43,9 @@ def log_bernoulli(y, p):
     return tf.reduce_sum(result, 1)
 
 
-def log_gamma(x, alpha, beta):
+def log_gamma(x, k, theta):
     # TODO: Check tf.lgamma
-    error = alpha * min_log(beta) - tf.lgamma(alpha) + (alpha - 1) * min_log(tf.cast(x, tf.float32)) - beta * x
+    error = (k - 1) * min_log(x) - (tf.lgamma(k) + k * min_log(theta) + x / theta)
     return tf.reduce_sum(error, 1)
 
 
@@ -57,9 +61,16 @@ def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activati
 
 def make_mu_and_sigma(nn, tensor):
     mu, log_sigma = tf.split(nn(tensor), num_or_size_splits=2, axis=1)
-    log_sigma = tf.clip_by_value(log_sigma, -5, 5)
-    sigma = tf.exp(log_sigma)
+    # log_sigma = tf.clip_by_value(log_sigma, -5, 5)
+    sigma = clip_exp(log_sigma)
     return mu, sigma
+
+
+def make_k_and_theta(nn, tensor):
+    log_k, log_theta = tf.split(nn(tensor), num_or_size_splits=2, axis=1)
+    k = clip_exp(log_k)
+    theta = clip_exp(log_theta)
+    return k, theta
 
 
 def get_match_data(match_id):
@@ -166,7 +177,7 @@ def create_data_set():
     for match_id in DATASET["player_results"]:
         for i in DATASET["player_results"][match_id]:
             results.append(i)
-    scalar = MinMaxScaler(feature_range=(0, 10))
+    scalar = MinMaxScaler(feature_range=(0, 1))
     scalar.fit(results)
     # temp fix, not fixing since not gonna use this in the future
     warnings.filterwarnings("ignore", category=DeprecationWarning)
