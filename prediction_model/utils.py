@@ -6,7 +6,7 @@ import tensorflow as tf
 from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
-from prediction_model import PLAYERS_PER_TEAM, PLAYERS, PLAYER_DIM, MATCHES, MATCH_LIST
+from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, PLAYER_DIM, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES
 
 
 class Stats(Enum):
@@ -101,16 +101,11 @@ def get_player_data(match_id: int) -> dict:
     :rtype: dict
     """
     match_data = get_match_data(match_id)
-    radiant_players = []
-    dire_players = []
+    players = []
     for player in match_data["players"]:
-        if get_player_side(player["player_slot"]):
-            radiant_players.append(player)
-        else:
-            dire_players.append(player)
+        players.append(player)
     return {
-        "radiant_players": radiant_players,
-        "dire_players": dire_players,
+        "players": players,
         "match_id": match_id,
         "match_data": match_data
     }
@@ -121,8 +116,7 @@ def get_match_arrays(match_id):
     radiant_ids = []
     dire_ids = []
     player_results = []
-    players_stats = match_stats["radiant_players"] + match_stats["dire_players"]
-    for idx, player_stat in enumerate(players_stats):
+    for idx, player_stat in enumerate(match_stats["players"]):
         player_result = [player_stat[Stats.GPM.value], player_stat[Stats.XPM.value],
                          player_stat[Stats.CREEPS.value], player_stat[Stats.DENIES.value],
                          player_stat[Stats.KILLS.value], player_stat[Stats.DEATHS.value],
@@ -134,9 +128,9 @@ def get_match_arrays(match_id):
             dire_ids.append(player_stat["account_id"])
     player_skills = []
     for player_id in radiant_ids + dire_ids:
-        if player_id not in PLAYERS:
-            PLAYERS[player_id] = [0] * PLAYER_DIM + [1] * PLAYER_DIM
-        player_skills.append(PLAYERS[player_id])
+        if player_id not in PLAYER_SKILLS:
+            PLAYER_SKILLS[player_id] = [0] * PLAYER_DIM + [1] * PLAYER_DIM
+        player_skills.append(PLAYER_SKILLS[player_id])
     if "radiant_win" not in match_stats["match_data"]:
         match_stats["match_data"]["radiant_win"] = True
     if match_stats["match_data"]["radiant_win"]:
@@ -194,10 +188,25 @@ def create_data_set():
 def get_new_batch(seed, batch_size):
     batch = {"player_skills": [],
              "player_results": [],
-             "team_results": []}
+             "team_results": [],
+             "match_ids": []}
     for i in range(batch_size):
         match_id = MATCH_LIST[(seed * batch_size + i) % len(MATCH_LIST)]
         batch["player_skills"].append(DATASET["player_skills"][match_id])
         batch["player_results"].append(DATASET["player_results"][match_id])
         batch["team_results"].append(DATASET["team_results"][match_id])
+        batch["match_ids"].append(match_id)
     return batch
+
+
+def get_player_ids(match_id):
+    player_ids = []
+    players = get_match_data(match_id)["players"]
+    for player in players:
+        player_ids.append(player["account_id"])
+    return player_ids
+
+
+def store_player_performances(match_ids, performances):
+    for idx, match_id in enumerate(match_ids):
+        PLAYER_PERFORMANCES[match_id] = performances[idx]

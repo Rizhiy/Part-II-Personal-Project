@@ -1,14 +1,9 @@
-import sys
-
-import numpy as np
 import tensorflow as tf
 
 from prediction_model import PLAYER_DIM, PLAYERS_PER_TEAM, NUM_OF_TEAMS, PLAYER_RESULT_DIM, TEAM_RESULTS_DIM, TEAM_DIM, \
     BATCH_SIZE
-from prediction_model.utils import make_mu_and_sigma, make_sql_nn, log_normal, log_bernoulli, create_data_set, entropy, \
-    get_new_batch, make_k_and_theta, log_gamma
-
-sess = tf.Session()
+from prediction_model.utils import make_mu_and_sigma, make_sql_nn, log_normal, log_bernoulli, entropy, \
+    make_k_and_theta, log_gamma
 
 # Do we really need float32? How much faster will float16 be? Same for ints
 player_skills = tf.placeholder(tf.float32, shape=(BATCH_SIZE, PLAYERS_PER_TEAM * NUM_OF_TEAMS, PLAYER_DIM * 2))
@@ -107,30 +102,3 @@ log_result -= entropy(team0_performance_sigma)
 log_result -= entropy(team1_performance_sigma)
 
 loss = -tf.reduce_mean(log_result)
-
-test_result = player_results_split[0]
-test2_result = player_to_results_k[0] * player_to_results_theta[0]
-
-train_step = tf.train.AdamOptimizer().minimize(loss)
-init = tf.global_variables_initializer()
-sess.run(init)
-
-create_data_set()
-
-result = 0
-alpha = .9
-for i in range(int(1e6)):
-    batch = get_new_batch(i, BATCH_SIZE)
-    _, loss_step, test, test2 = sess.run((train_step, loss, test_result, test2_result),
-                                         feed_dict={player_skills: batch["player_skills"],
-                                                    player_results: batch["player_results"],
-                                                    team_results: batch["team_results"]})
-    result = (result * alpha + loss_step) / (1 + alpha)
-    if np.math.isnan(loss_step):
-        print("Nan loss", file=sys.stderr)
-        break
-    if i % 1000 == 0:
-        print()
-        print("iteration: {:6d}, loss: {:10.0f}".format(i, result))
-        print("result:    {}".format(test[0]))
-        print("inference: {}".format(test2[0]))
