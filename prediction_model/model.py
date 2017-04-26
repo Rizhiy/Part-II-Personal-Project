@@ -90,26 +90,19 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
 
 team_result_logit = team_result_nn(tf.concat([team0_performance, team1_performance], axis=1))
 
-# test_result = []
-# test2_result = []
 log_result = 0
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     first = log_gamma(player_results_split[i], player_to_results_k[i], player_to_results_theta[i])
     log_result += first
-    # test_result.append(tf.reduce_mean(first))
     mu, sigma = tf.split(player_skills_split[i], 2, axis=1)
-    # second = log_normal(player_performance[i], mu, sigma)
     second = entropy(player_performance_sigma[i])
     log_result -= second
-    # test2_result.append(tf.reduce_mean(second))
 
 log_result += log_bernoulli(team_results, tf.sigmoid(team_result_logit))
 
 log_result += log_normal(team0_performance, player_to_team0_mu, player_to_team0_sigma)
 log_result += log_normal(team1_performance, player_to_team1_mu, player_to_team1_sigma)
 
-# log_result -= log_normal(team0_performance, team0_performance_mu, team0_performance_sigma)
-# log_result -= log_normal(team1_performance, team1_performance_mu, team1_performance_sigma)
 log_result -= entropy(team0_performance_sigma)
 log_result -= entropy(team1_performance_sigma)
 
@@ -124,17 +117,20 @@ sess.run(init)
 
 create_data_set()
 
+result = 0
+alpha = .9
 for i in range(int(1e6)):
     batch = get_new_batch(i, BATCH_SIZE)
     _, loss_step, test, test2 = sess.run((train_step, loss, test_result, test2_result),
                                          feed_dict={player_skills: batch["player_skills"],
                                                     player_results: batch["player_results"],
                                                     team_results: batch["team_results"]})
+    result = (result * alpha + loss_step) / (1 + alpha)
     if np.math.isnan(loss_step):
         print("Nan loss", file=sys.stderr)
         break
-    if i % 100 == 0:
+    if i % 1000 == 0:
         print()
-        print("iteration: {:6d}, loss: {:10.0f}".format(i, loss_step))
+        print("iteration: {:6d}, loss: {:10.0f}".format(i, result))
         print("result:    {}".format(test[0]))
         print("inference: {}".format(test2[0]))
