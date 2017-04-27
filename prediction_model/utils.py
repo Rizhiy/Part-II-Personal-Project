@@ -6,7 +6,8 @@ import tensorflow as tf
 from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
-from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, PLAYER_DIM, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES
+from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
+    BATCH_SIZE, NUMBER_OF_BATCHES, PLAYER_GAMES, DEFAULT_PLAYER_SKILL
 
 
 class Stats(Enum):
@@ -33,7 +34,7 @@ def clip_exp(tensor):
 
 
 def log_normal(x, mu, sigma):
-    error = -(tf.pow((x - mu) / sigma, 2) / 2 + min_log(sigma) + min_log(2 * np.pi) / 2)
+    error = -(tf.pow((x - mu) / sigma, 2) / 2 + min_log(sigma))
     return tf.reduce_sum(error, 1)
 
 
@@ -61,6 +62,18 @@ def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activati
     p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
     if dropout:
         p.add(Dropout(.2))
+    return p
+
+
+def make_bigger_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
+    p = keras.models.Sequential()
+    p.add(Dense(units=int((in_dim + out_dim) * 2), input_dim=in_dim, activation='relu',
+                kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim)), input_dim=in_dim, activation='relu',
+                kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, activation='relu',
+                kernel_initializer='random_normal'))
+    p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
     return p
 
 
@@ -115,6 +128,7 @@ def get_match_arrays(match_id):
     match_stats = get_player_data(match_id)
     radiant_ids = []
     dire_ids = []
+    player_ids = []
     player_results = []
     for idx, player_stat in enumerate(match_stats["players"]):
         player_result = [player_stat[Stats.GPM.value], player_stat[Stats.XPM.value],
@@ -122,15 +136,17 @@ def get_match_arrays(match_id):
                          player_stat[Stats.KILLS.value], player_stat[Stats.DEATHS.value],
                          player_stat[Stats.ASSISTS.value], player_stat[Stats.LEVEL.value]]
         player_results.append(player_result)
+        player_ids.append(player_stat["account_id"])
         if idx < PLAYERS_PER_TEAM:
             radiant_ids.append(player_stat["account_id"])
         else:
             dire_ids.append(player_stat["account_id"])
-    player_skills = []
-    for player_id in radiant_ids + dire_ids:
-        if player_id not in PLAYER_SKILLS:
-            PLAYER_SKILLS[player_id] = [0] * PLAYER_DIM + [1] * PLAYER_DIM
-        player_skills.append(PLAYER_SKILLS[player_id])
+    if match_id not in PLAYER_SKILLS:
+        skills = []
+        for _ in range(10):
+            skills.append(DEFAULT_PLAYER_SKILL)
+        PLAYER_SKILLS[match_id] = skills
+    player_skills = PLAYER_SKILLS[match_id]
     if "radiant_win" not in match_stats["match_data"]:
         match_stats["match_data"]["radiant_win"] = True
     if match_stats["match_data"]["radiant_win"]:
@@ -185,13 +201,17 @@ def create_data_set():
             DATASET["player_results"][match_id][idx] = scalar.transform(stats)
 
 
-def get_new_batch(seed, batch_size):
+def get_new_batch(seed):
     batch = {"player_skills": [],
              "player_results": [],
              "team_results": [],
-             "match_ids": []}
-    for i in range(batch_size):
-        match_id = MATCH_LIST[(seed * batch_size + i) % len(MATCH_LIST)]
+             "match_ids": [],
+             "switch": False}
+    if (seed + 1) * BATCH_SIZE % len(MATCH_LIST) == 0:
+        batch["switch"] = True
+    seed = seed % NUMBER_OF_BATCHES
+    for i in range(BATCH_SIZE):
+        match_id = MATCH_LIST[seed * BATCH_SIZE + i]
         batch["player_skills"].append(DATASET["player_skills"][match_id])
         batch["player_results"].append(DATASET["player_results"][match_id])
         batch["team_results"].append(DATASET["team_results"][match_id])
@@ -210,3 +230,53 @@ def get_player_ids(match_id):
 def store_player_performances(match_ids, performances):
     for idx, match_id in enumerate(match_ids):
         PLAYER_PERFORMANCES[match_id] = performances[idx]
+
+
+def get_skill_batch(seed):
+    batch = {"player_pre_skills": [],
+             "player_performances": [],
+             "player_next_performances": [],
+             "match_ids": [],
+             "switch": False}
+    if (seed + 1) * BATCH_SIZE % len(MATCH_LIST) == 0:
+        batch["switch"] = True
+    seed = seed % NUMBER_OF_BATCHES
+    for i in range(BATCH_SIZE):
+        pre_skill = []
+        performance = []
+        next_performance = []
+        match_id = MATCH_LIST[seed * BATCH_SIZE + i]
+        match_data = get_match_data(match_id)
+        player_ids = []
+        for player in match_data["players"]:
+            player_ids.append(player["account_id"])
+        for player_id in player_ids:
+            slot = PLAYER_GAMES[player_id][match_id]["slot"]
+            performance.append(PLAYER_PERFORMANCES[match_id][slot])
+            pre_skill.append(PLAYER_SKILLS[match_id][slot])
+            next_game = PLAYER_GAMES[player_id][match_id]["next"]
+            if next_game is None:
+                next_performance.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
+            else:
+                slot = PLAYER_GAMES[player_id][next_game]["slot"]
+                next_performance.append(PLAYER_PERFORMANCES[next_game][slot])
+        batch["player_pre_skills"].append(pre_skill)
+        batch["player_performances"].append(performance)
+        batch["player_next_performances"].append(next_performance)
+        batch["match_ids"].append(match_id)
+    return batch
+
+
+def update_player_skills(match_ids, skills):
+    for idx, match_id in enumerate(match_ids):
+        match_data = get_match_data(match_id)
+        player_ids = []
+        for player in match_data["players"]:
+            player_ids.append(player["account_id"])
+        player_skills = skills[idx]
+        for idx2, player_id in enumerate(player_ids):
+            skill = player_skills[idx2]
+            next_game = PLAYER_GAMES[player_id][match_id]["next"]
+            if next_game:
+                slot = PLAYER_GAMES[player_id][next_game]["slot"]
+                PLAYER_SKILLS[match_id][slot] = skill

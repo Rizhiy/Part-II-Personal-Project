@@ -28,11 +28,9 @@ player_skill_nn = make_sql_nn(PLAYER_RESULT_DIM + TEAM_DIM, PLAYER_DIM * 2)
 player_results_split = tf.split(player_results, PLAYERS_PER_TEAM * NUM_OF_TEAMS, axis=1)
 player_skills_split = tf.split(player_skills, PLAYERS_PER_TEAM * NUM_OF_TEAMS, axis=1)
 
-for idx, player_result in enumerate(player_results_split):
-    player_results_split[idx] = tf.squeeze(player_result, 1)
-
-for idx, player_skill in enumerate(player_skills_split):
-    player_skills_split[idx] = tf.squeeze(player_skill, 1)
+for i in range(len(player_results_split)):
+    player_results_split[i] = tf.squeeze(player_results_split[i], 1)
+    player_skills_split[i] = tf.squeeze(player_skills_split[i], 1)
 
 team0_performance_input = tf.concat([tf.reshape(player_results, [BATCH_SIZE, -1]), team_results], axis=1)
 team0_performance_mu, team0_performance_sigma = make_mu_and_sigma(result_to_team_nn, team0_performance_input)
