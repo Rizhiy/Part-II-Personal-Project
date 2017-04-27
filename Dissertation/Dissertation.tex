@@ -453,7 +453,7 @@ The model assumes that there are two types of results for each game:
 \end{itemize}
 The model further assumes that player specific results depend on skills of the relevant player and skills of every team, and overall results only depend on skills of each team.
 This dependencies are seen in figure \ref{fig:model-simple}.
-An example of a system made for a game in which four players play in two teams can be seen in figure \ref{fig:four-player-model}.
+An example of a system made for a game in which four players play in two teams can be seen in figure \ref{fig:four-player-model} and a factor graph expansion can be found in Appendix \ref{factor-graph}.
 
 There are two parts in the system: predicting results from inferred player skills and inferring player skills from their history.
 Training both the inner model for statistic prediction and model for player skill updates at the same time would greatly increase the data required for processing. %TODO check this
@@ -518,120 +518,7 @@ We do that until all parameters reach sufficiently stable values.
 \label{fig:four-player-model}
 \end{figure}
 
-%\begin{figure}[h]
-%\centering
-%\begin{tikzpicture}
-%\tikzstyle{main}=[circle, thick, draw =black!80]
-%\tikzstyle{connect}=[-latex, thick]
-%\tikzstyle{box}=[rectangle, draw=black!100]
-%	
-%	% Team results
-%	\node[main,fill=black!15] (y) [] {$\boldsymbol{y}$};
-%	
-%	% Team performances
-%	\node[main] (t0)[above=3cm of y, xshift=-4.5cm] {$\boldsymbol{t}_0$};
-%	\node[main] (t1)[above=3cm of y, xshift=4.5cm] {$\boldsymbol{t}_1$};
-%	
-%	% Player results
-% 	\node[main,fill=black!15] (x0)[below= 3cm of t0, xshift=-1.5cm] {$\boldsymbol{x}_0$};
-% 	\node[main,fill=black!15] (x1)[below= 3cm of t0, xshift=1.5cm] {$\boldsymbol{x}_1$};
-% 	\node[main,fill=black!15] (x2)[below= 3cm of t1, xshift=-1.5cm] {$\boldsymbol{x}_2$};
-% 	\node[main,fill=black!15] (x3)[below= 3cm of t1, xshift=1.5cm] {$\boldsymbol{x}_3$};
-% 	
-% 	% Player performances
-% 	\node[main] (p0)[above=of t0, xshift=-1.5cm] {$\boldsymbol{p}_0$};
-% 	\node[main] (p1)[above=of t0, xshift=1.5cm] {$\boldsymbol{p}_1$};
-% 	\node[main] (p2)[above=of t1, xshift=-1.5cm] {$\boldsymbol{p}_2$};
-% 	\node[main] (p3)[above=of t1, xshift=1.5cm] {$\boldsymbol{p}_3$};
-% 	
-% 	% Player skills
-% 	\node[main] (s0)[above=of p0] {$\boldsymbol{s}_0$};
-% 	\node[main] (s1)[above=of p1] {$\boldsymbol{s}_1$};
-% 	\node[main] (s2)[above=of p2] {$\boldsymbol{s}_2$};
-% 	\node[main] (s3)[above=of p3] {$\boldsymbol{s}_3$};
-% 	
-% 	% Skill input
-% 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_0;\boldsymbol{\mu}_0.\ \boldsymbol{\sigma}_0^2)$] ()[above=of s0] {}
-% 		edge [] (s0);
-% 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_1;\boldsymbol{\mu}_1.\ \boldsymbol{\sigma}_1^2)$] ()[above=of s1] {}
-% 		edge [] (s1);
-% 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_2;\boldsymbol{\mu}_2.\ \boldsymbol{\sigma}_2^2)$] ()[above=of s2] {}
-% 		edge [] (s2);
-% 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_3;\boldsymbol{\mu}_3.\ \boldsymbol{\sigma}_3^2)$] ()[above=of s3] {}
-% 		edge [] (s3);
-% 		
-% 	% Skill to performance
-% 	\node[factor, label=left:$\Theta(\bs{p}_0;\bs{s}_0)$] () [above=of p0] {}
-% 		edge [] (s0)
-% 		edge [] (p0);
-% 	\node[factor, label=left:$\Theta(\bs{p}_1;\bs{s}_1)$] () [above=of p1] {}
-% 		edge [] (s1)
-% 		edge [] (p1);
-% 	\node[factor, label=left:$\Theta(\bs{p}_2;\bs{s}_2)$] () [above=of p2] {}
-% 		edge [] (s2)
-% 		edge [] (p2);
-% 	\node[factor, label=left:$\Theta(\bs{p}_3;\bs{s}_3)$] () [above=of p3] {}
-% 		edge [] (s3)
-% 		edge [] (p3);
-% 		
-% 	% Performance to team
-% 	\node[factor, label=185:$\Phi(\bs{t}_0;\bs{p}_0.\ \bs{p}_1)$] () [above=of t0] {}
-% 		edge [] (p0)
-% 		edge [] (p1)
-% 		edge [] (t0);
-% 	\node[factor, label=185:$\Phi(\bs{t}_1;\bs{p}_2.\ \bs{p}_3)$] () [above=of t1] {}
-% 		edge [] (p2)
-% 		edge [] (p3)
-% 		edge [] (t1);
-% 		
-% 	% Team results
-% 	\node[factor, label=185:$\text{Bern}(\boldsymbol{p}_{\psi}(\boldsymbol{t}_0.\ \boldsymbol{t}_1))$] () [above=of y] {}
-% 		edge [] (t0)
-% 		edge [] (t1)
-% 		edge [] (y);
-% 	
-% 	% Player results
-% 	\node[factor, label=185:$\Gamma(\bs{x}_0;\bs{p}_0.\ \bs{t}_0.\ \bs{t}_1)$] () [above=of x0] {}
-% 		edge [] (p0)
-% 		edge [] (t0)
-% 		edge [] (t1)
-% 		edge [] (x0);
-% 	\node[factor, label=185:$\Gamma(\bs{x}_1;\bs{p}_1.\ \bs{t}_0.\ \bs{t}_1)$] () [above=of x1] {}
-% 		edge [] (p1)
-% 		edge [] (t0)
-% 		edge [] (t1)
-% 		edge [] (x1);
-% 	\node[factor, label=185:$\Gamma(\bs{x}_2;\bs{p}_2.\ \bs{t}_1.\ \bs{t}_0)$] () [above=of x2] {}
-% 		edge [] (p2)
-% 		edge [] (t0)
-% 		edge [] (t1)
-% 		edge [] (x2);
-% 	\node[factor, label=185:$\Gamma(\bs{x}_3;\bs{p}_3.\ \bs{t}_1.\ \bs{t}_0)$] () [above=of x3] {}
-% 		edge [] (p3)
-% 		edge [] (t0)
-% 		edge [] (t1)
-% 		edge [] (x3);
-% 		
-% 	%Results
-% 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x0] {}
-% 		edge [] (x0);
-% 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x1] {}
-% 		edge [] (x1);
-% 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x2] {}
-% 		edge [] (x2);
-% 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x3] {}
-% 		edge [] (x3);
-%	\node[factor,label=below:$\mathbb{I} (y) $] ()[below=of y] {}
-% 		edge [] (y);
-% 		
-% 	\node[text width=9cm] (a0) [below=of y,yshift=-1cm] {$\Theta(\bs{p};\bs{s})=\mathcal{N}(\bs{p};\bs{\mu}_{\theta}(\bs{s}), \bs{\sigma}_{\theta}^2(\bs{s}))$};
-% 	\node[text width=9cm] (a1) [below=of a0,yshift=1cm] {$\Phi(\bs{t};\bs{p}_i,\bs{p}_j)=\mathcal{N}(\bs{t};\bs{\mu}_{\phi}(\bs{p}_i,\bs{p}_j), \bs{\sigma}_{\phi}^2(\bs{p}_i,\bs{p}_j))$ };
-% 	\node[text width=9cm] (a2) [below=of a1,yshift=1cm] {
-% 	$\Gamma(\bs{x};\bs{p},\bs{t}_i,\bs{t}_j)=\text{gamma}(\bs{x};\bs{k}_{\gamma}(\bs{p},\bs{t}_i,\bs{t}_j), \bs{\theta}_{\gamma}(\bs{p},\bs{t}_i,\bs{t}_j))$ };
-%\end{tikzpicture}
-%\caption{Example of a factor graph.}
-%\label{fig:four-player-model}
-%\end{figure}
+
 
 
 
@@ -753,7 +640,15 @@ Record the result.
 \item Repeat step two until all subsets have been used for validation.
 \item Average the results.
 \end{enumerate}
-
+\section{Hyper-parameter selection}
+The designed model includes several hyper-parameters which have to be adjusted for each game:
+\begin{enumerate}
+\item Ratio of the size of player skills/performance vector to the size of player results vector.
+\item Ratio of the size of team skill vector to the size of player skills vector.
+\item Size and structure of each neural network.
+\end{enumerate}
+They are ranked in order of importance, adjusting the first one gives the most accuracy increase, but also increases resources required the most.
+%TODO add figure here with hyper-parameter seach
 
 \chapter{Conclusions}
 
@@ -854,6 +749,120 @@ In such parts, all but the first set were hidden, indicated by comments in $<>$.
 }
 \end{lstlisting}
 
+\chapter{An example of factor graph} \label{factor-graph}
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\tikzstyle{main}=[circle, thick, draw=black!80, minimum size=20pt, inner sep=2pt]
+\tikzstyle{connect}=[-latex, thick]
+\tikzstyle{box}=[rectangle, draw=black!100]
+	
+	% Team results
+	\node[main] (y) [] {$\boldsymbol{y}$};
+	
+	% Team performances
+	\node[main] (t0)[above=2cm of y, xshift=-4.5cm] {$\boldsymbol{t}_0$};
+	\node[main] (t1)[above=2cm of y, xshift=4.5cm] {$\boldsymbol{t}_1$};
+	
+	% Player results
+ 	\node[main] (x0)[below= 2cm of t0, xshift=-1.5cm] {$\boldsymbol{x}_0$};
+ 	\node[main] (x1)[below= 2cm of t0, xshift=1.5cm] {$\boldsymbol{x}_1$};
+ 	\node[main] (x2)[below= 2cm of t1, xshift=-1.5cm] {$\boldsymbol{x}_2$};
+ 	\node[main] (x3)[below= 2cm of t1, xshift=1.5cm] {$\boldsymbol{x}_3$};
+ 	
+ 	% Player performances
+ 	\node[main] (p0)[above=of t0, xshift=-1.5cm] {$\boldsymbol{p}_0$};
+ 	\node[main] (p1)[above=of t0, xshift=1.5cm] {$\boldsymbol{p}_1$};
+ 	\node[main] (p2)[above=of t1, xshift=-1.5cm] {$\boldsymbol{p}_2$};
+ 	\node[main] (p3)[above=of t1, xshift=1.5cm] {$\boldsymbol{p}_3$};
+ 	
+ 	% Player skills
+ 	\node[main] (s0)[above=of p0] {$\boldsymbol{s}_0$};
+ 	\node[main] (s1)[above=of p1] {$\boldsymbol{s}_1$};
+ 	\node[main] (s2)[above=of p2] {$\boldsymbol{s}_2$};
+ 	\node[main] (s3)[above=of p3] {$\boldsymbol{s}_3$};
+ 	
+ 	% Skill input
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_0;\boldsymbol{\mu}_0.\ \boldsymbol{\sigma}_0^2)$] ()[above=of s0] {}
+ 		edge [] (s0);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_1;\boldsymbol{\mu}_1.\ \boldsymbol{\sigma}_1^2)$] ()[above=of s1] {}
+ 		edge [] (s1);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_2;\boldsymbol{\mu}_2.\ \boldsymbol{\sigma}_2^2)$] ()[above=of s2] {}
+ 		edge [] (s2);
+ 	\node[factor,label=$\mathcal{N}(\boldsymbol{s}_3;\boldsymbol{\mu}_3.\ \boldsymbol{\sigma}_3^2)$] ()[above=of s3] {}
+ 		edge [] (s3);
+ 		
+ 	% Skill to performance
+ 	\node[factor, label=left:$\Theta(\bs{p}_0;\bs{s}_0)$] () [above=of p0] {}
+ 		edge [] (s0)
+ 		edge [] (p0);
+ 	\node[factor, label=left:$\Theta(\bs{p}_1;\bs{s}_1)$] () [above=of p1] {}
+ 		edge [] (s1)
+ 		edge [] (p1);
+ 	\node[factor, label=left:$\Theta(\bs{p}_2;\bs{s}_2)$] () [above=of p2] {}
+ 		edge [] (s2)
+ 		edge [] (p2);
+ 	\node[factor, label=left:$\Theta(\bs{p}_3;\bs{s}_3)$] () [above=of p3] {}
+ 		edge [] (s3)
+ 		edge [] (p3);
+ 		
+ 	% Performance to team
+ 	\node[factor, label=185:$\Phi(\bs{t}_0;\bs{p}_0.\ \bs{p}_1)$] () [above=of t0] {}
+ 		edge [] (p0)
+ 		edge [] (p1)
+ 		edge [] (t0);
+ 	\node[factor, label=185:$\Phi(\bs{t}_1;\bs{p}_2.\ \bs{p}_3)$] () [above=of t1] {}
+ 		edge [] (p2)
+ 		edge [] (p3)
+ 		edge [] (t1);
+ 		
+ 	% Team results
+ 	\node[factor, label=185:$\text{Bern}(\boldsymbol{p}_{\psi}(\boldsymbol{t}_0.\ \boldsymbol{t}_1))$] () [above=of y] {}
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (y);
+ 	
+ 	% Player results
+ 	\node[factor, label=185:$\Gamma(\bs{x}_0;\bs{p}_0.\ \bs{t}_0.\ \bs{t}_1)$] () [above=of x0] {}
+ 		edge [] (p0)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x0);
+ 	\node[factor, label=185:$\Gamma(\bs{x}_1;\bs{p}_1.\ \bs{t}_0.\ \bs{t}_1)$] () [above=of x1] {}
+ 		edge [] (p1)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x1);
+ 	\node[factor, label=185:$\Gamma(\bs{x}_2;\bs{p}_2.\ \bs{t}_1.\ \bs{t}_0)$] () [above=of x2] {}
+ 		edge [] (p2)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x2);
+ 	\node[factor, label=185:$\Gamma(\bs{x}_3;\bs{p}_3.\ \bs{t}_1.\ \bs{t}_0)$] () [above=of x3] {}
+ 		edge [] (p3)
+ 		edge [] (t0)
+ 		edge [] (t1)
+ 		edge [] (x3);
+ 		
+ 	%Results
+ 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x0] {}
+ 		edge [] (x0);
+ 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x1] {}
+ 		edge [] (x1);
+ 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x2] {}
+ 		edge [] (x2);
+ 	\node[factor,label=below:$\mathbb{I} (x) $] ()[below=of x3] {}
+ 		edge [] (x3);
+	\node[factor,label=below:$\mathbb{I} (y) $] ()[below=of y] {}
+ 		edge [] (y);
+ 		
+ 	\node[text width=10cm] (a0) [below=of y,yshift=-1cm] {$\Theta(\bs{p};\bs{s})=\mathcal{N}(\bs{p};\bs{\mu}_{\theta}(\bs{s}), \bs{\sigma}_{\theta}^2(\bs{s}))$};
+ 	\node[text width=10cm] (a1) [below=of a0,yshift=1cm] {$\Phi(\bs{t};\bs{p}_i,\bs{p}_j)=\mathcal{N}(\bs{t};\bs{\mu}_{\phi}(\bs{p}_i,\bs{p}_j), \bs{\sigma}_{\phi}^2(\bs{p}_i,\bs{p}_j))$ };
+ 	\node[text width=10cm] (a2) [below=of a1,yshift=1cm] {
+ 	$\Gamma(\bs{x};\bs{p},\bs{t}_i,\bs{t}_j)=\text{gamma}(\bs{x};\bs{k}_{\gamma}(\bs{p},\bs{t}_i,\bs{t}_j), \bs{\theta}_{\gamma}(\bs{p},\bs{t}_i,\bs{t}_j))$ };
+\end{tikzpicture}
+\caption*{This is the factor graph expansion for graphical model in figure \ref{fig:four-player-model}.}
+\end{figure}
 \chapter{Project Proposal}
 
 \end{document}
