@@ -468,7 +468,7 @@ We do that until all parameters reach sufficiently stable values.
 \centering
 \begin{tikzpicture}
 	% Team results
-	\node[obs] (y) [] {$y$};	
+	\node[obs] (y) [] {$\bs{y}$};	
 	
 	% Team performances
 	\node[latent] (t0)[above=2cm of y, xshift=-4cm] {$\boldsymbol{t}_0$};
@@ -603,7 +603,48 @@ x' = \frac{1}{1+e^{-x}}
 \end{equation}
 
 \subsection{Skill update model}
+After every match the system updates its belief about the player skills using the previous belief and player performance in the match.
+This forms a chain of beliefs about player skill at each particular moment in time.
+This model treats the player performance reported by the prediction model as observations of player skill.
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}
+\tikzstyle{main}=[circle, thick, draw=black!80, minimum size=35pt, inner sep=2pt]
+	%Skill chain
+	\node[] (sn3) [] {};
+	\node[main] (sn0) [right=2cm of sn3] {$\bs{s}_{t-1}$};
+	\node[main] (sn)  [right=2cm of sn0] {$\bs{s}_t$};
+	\node[main] (sn1) [right=2cm of sn] {$\bs{s}_{t+1}$};	
+	\node[] (sn2) [right=2cm of sn1] {};	
 
+	%Dots
+	\node[] (d0) [below=of sn3] {$\cdots$};
+	\node[] (d1) [below=of sn2] {$\cdots$};
+	
+	%Performance chain
+	\node[main, fill=black!15] (p0) [below=of sn0] {$\bs{p}_{t-2}$};
+	\node[main, fill=black!15] (p) [below=of sn] {$\bs{p}_{t-1}$};
+	\node[main, fill=black!15] (p1) [below=of sn1] {$\bs{p}_{t}$};
+	
+	%Skill to skill
+	\edge[] {sn3} {sn0};
+	\edge[] {sn0} {sn};
+	\edge[] {sn} {sn1};
+	\edge[] {sn1} {sn2};	
+		
+	%Perormance to skill
+	\edge[] {p0} {sn0};
+	\edge[] {p} {sn};
+	\edge[] {p1} {sn1};
+\end{tikzpicture}
+\caption{Skill update model}
+\label{fig:skill-update}
+\end{figure}
+After each game, for each player the model updates the player skill using:
+\begin{equation}
+P(\bs{s}_t) = P(\bs{s}_t\mid \bs{s}_{t-1},\bs{p}_{t-1}) = \mathcal{N}(\bs{s}_t;\bs{\mu_\lambda}(\bs{s}_{t-1},\bs{p}_{t-1}),\bs{\sigma_\lambda}(\bs{s}_{t-1},\bs{p}_{t-1}))
+\end{equation}
+Where $\bs{\mu_\lambda}$ and $\bs{\sigma_\lambda}$ are outputs of a neural network with inputs $\bs{s}_{t-1}$ and $\bs{p}_{t-1}$ parametrised by $\bs{\lambda}$.
 \subsection{Prediction}
 To predict the values for a particular match-up we just need to take the set of skills corresponding to players in the match-up and feed them into the top of the model.
 
@@ -647,8 +688,9 @@ The designed model includes several hyper-parameters which have to be adjusted f
 \item Ratio of the size of team skill vector to the size of player skills vector.
 \item Size and structure of each neural network.
 \end{enumerate}
-They are ranked in order of importance, adjusting the first one gives the most accuracy increase, but also increases resources required the most.
+They are ranked in order of importance, adjusting the first one gives the most accuracy increase, but also increases required resources the most.
 %TODO add figure here with hyper-parameter seach
+
 
 \chapter{Conclusions}
 
