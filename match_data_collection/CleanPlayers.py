@@ -7,8 +7,6 @@ for player in players:
 
 player_list = list(player_set)
 player_list.sort()
-print(player_list)
-
 clean_players = open('sorted_match_ids.txt','w')
 
 for player in player_list:

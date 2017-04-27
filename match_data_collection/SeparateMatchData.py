@@ -4,11 +4,17 @@ import os.path
 match_list = open("sorted_match_ids.txt", 'r').readlines()
 allMatches = []
 player_stats = {}
+
 for match in match_list:
     match_id = int(match.rstrip('\n'))
     allMatches.append(match_id)
     if os.path.isfile('../all_matches/' + str(match_id) + '.json'):
-        match_data = json.load(open('../all_matches/' + str(match_id) + '.json', 'r'))
+        try:
+            match_data = json.load(open('../all_matches/' + str(match_id) + '.json', 'r'))
+        except:
+            match_list.remove(str(match_id)+'\n')
+        if len(match_data["players"]) != 10:
+            continue
         for player in match_data["players"]:
             player_id = int(player["account_id"])
             if player_id in player_stats:
@@ -54,7 +60,7 @@ for match in match_list:
         goodPlayers100 = True
         goodPlayers50 = True
         goodPlayers20 = True
-        if(len(match_data["players"]) != 10):
+        if len(match_data["players"]) != 10:
             continue
         for player in match_data["players"]:
             player_id = int(player["account_id"])
@@ -100,5 +106,5 @@ print(matches200.__len__())
 print(matches500.__len__())
 print(matches1000.__len__())
 
-file = open("../match_stats.json",'w')
-json.dump(match_stats,file)
+file = open("../match_stats.json", 'w')
+json.dump(match_stats, file)
