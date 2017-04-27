@@ -10,3 +10,5 @@
 *.run.xml
 *.lof
 *.ps
+*.ilg
+*.ind
