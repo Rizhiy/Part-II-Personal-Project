@@ -1,5 +1,6 @@
 import math
 import random
+from copy import deepcopy
 
 import trueskill
 from trueskill import rate
@@ -7,8 +8,6 @@ from trueskill.backends import cdf
 
 import data_analysis
 from data_analysis import Player
-
-from copy import deepcopy
 
 
 def generate_feature_set(match_id):
@@ -30,7 +29,13 @@ def generate_feature_set(match_id):
     }
 
 
-def get_player_data(match_id):
+def get_player_data(match_id: int) -> dict:
+    """
+    :param match_id: id of the required match
+    :type match_id: int
+    :return: dict with four values: "radiant_players", "dire_players", "match_id" and "match_data"
+    :rtype: dict
+    """
     match_data = get_match_data(match_id)
     radiant_players = []
     dire_players = []
