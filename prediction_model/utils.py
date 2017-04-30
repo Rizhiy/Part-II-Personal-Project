@@ -1,3 +1,7 @@
+import copy
+import random
+import sys
+from bisect import bisect
 from enum import Enum
 
 import keras
@@ -7,7 +11,7 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, NUMBER_OF_BATCHES, PLAYER_GAMES, DEFAULT_PLAYER_SKILL
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, PLAYER_DIM
 
 
 class Stats(Enum):
@@ -144,9 +148,8 @@ def get_match_arrays(match_id):
     if match_id not in PLAYER_SKILLS:
         skills = []
         for _ in range(10):
-            skills.append(DEFAULT_PLAYER_SKILL)
+            skills.append(create_random_skill())
         PLAYER_SKILLS[match_id] = skills
-    player_skills = PLAYER_SKILLS[match_id]
     if "radiant_win" not in match_stats["match_data"]:
         match_stats["match_data"]["radiant_win"] = True
     if match_stats["match_data"]["radiant_win"]:
@@ -154,7 +157,6 @@ def get_match_arrays(match_id):
     else:
         team_results = [0, 1]
     return {
-        "player_skills": player_skills,
         "player_results": player_results,
         "team_results": team_results
     }
@@ -173,8 +175,7 @@ def get_batch(seed, batch_size):
     return batch
 
 
-DATASET = {"player_skills": {},
-           "player_results": {},
+DATASET = {"player_results": {},
            "team_results": {}}
 
 
@@ -184,7 +185,6 @@ def create_data_set():
     """
     for match_id in MATCH_LIST:
         data = get_match_arrays(match_id)
-        DATASET["player_skills"][match_id] = data["player_skills"]
         DATASET["player_results"][match_id] = data["player_results"]
         DATASET["team_results"][match_id] = data["team_results"]
 
@@ -201,21 +201,38 @@ def create_data_set():
             DATASET["player_results"][match_id][idx] = scalar.transform(stats)
 
 
-def get_new_batch(seed):
+def get_new_batch(seed, match_list, num_of_batches):
     batch = {"player_skills": [],
              "player_results": [],
              "team_results": [],
              "match_ids": [],
              "switch": False}
-    if (seed + 1) * BATCH_SIZE % len(MATCH_LIST) == 0:
+    if (seed + 1) * BATCH_SIZE % len(match_list) == 0:
         batch["switch"] = True
-    seed = seed % NUMBER_OF_BATCHES
+    seed = seed % num_of_batches
     for i in range(BATCH_SIZE):
-        match_id = MATCH_LIST[seed * BATCH_SIZE + i]
-        batch["player_skills"].append(DATASET["player_skills"][match_id])
+        match_id = match_list[seed * BATCH_SIZE + i]
+        batch["player_skills"].append(PLAYER_SKILLS[match_id])
         batch["player_results"].append(DATASET["player_results"][match_id])
         batch["team_results"].append(DATASET["team_results"][match_id])
         batch["match_ids"].append(match_id)
+    return batch
+
+
+def get_test_batch(seed, test_list):
+    batch = {"player_skills": [],
+             "player_results": [],
+             "team_results": [],
+             "match_ids": []}
+    for i in range(BATCH_SIZE):
+        match_id = test_list[seed * BATCH_SIZE + i]
+        batch["player_results"].append(DATASET["player_results"][match_id])
+        batch["team_results"].append(DATASET["team_results"][match_id])
+        batch["match_ids"].append(match_id)
+        skill_set = []
+        for player_id in get_player_ids(match_id):
+            skill_set.append(get_skill(player_id, match_id))
+        batch["player_skills"].append(skill_set)
     return batch
 
 
@@ -223,7 +240,7 @@ def get_player_ids(match_id):
     player_ids = []
     players = get_match_data(match_id)["players"]
     for player in players:
-        player_ids.append(player["account_id"])
+        player_ids.append(int(player["account_id"]))
     return player_ids
 
 
@@ -232,51 +249,103 @@ def store_player_performances(match_ids, performances):
         PLAYER_PERFORMANCES[match_id] = performances[idx]
 
 
-def get_skill_batch(seed):
-    batch = {"player_pre_skills": [],
-             "player_performances": [],
-             "player_next_performances": [],
-             "match_ids": [],
-             "switch": False}
-    if (seed + 1) * BATCH_SIZE % len(MATCH_LIST) == 0:
-        batch["switch"] = True
-    seed = seed % NUMBER_OF_BATCHES
-    for i in range(BATCH_SIZE):
-        pre_skill = []
-        performance = []
-        next_performance = []
-        match_id = MATCH_LIST[seed * BATCH_SIZE + i]
-        match_data = get_match_data(match_id)
-        player_ids = []
-        for player in match_data["players"]:
-            player_ids.append(player["account_id"])
-        for player_id in player_ids:
-            slot = PLAYER_GAMES[player_id][match_id]["slot"]
-            performance.append(PLAYER_PERFORMANCES[match_id][slot])
-            pre_skill.append(PLAYER_SKILLS[match_id][slot])
-            next_game = PLAYER_GAMES[player_id][match_id]["next"]
-            if next_game is None:
-                next_performance.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
+def get_skill_batch(player_id):
+    batch = {"player_pre_skill": [],
+             "player_performance": [],
+             "player_next_performance": [],
+             "target_game": []}
+    player_games = PLAYER_GAMES[player_id]
+    num_games = len(player_games["all"])
+    for idx, match_id in enumerate(player_games["all"]):
+        if idx - GAMES_TO_CONSIDER < 0:
+            pre_skill = DEFAULT_PLAYER_SKILL
+        else:
+            skill_game = player_games["all"][idx - GAMES_TO_CONSIDER]
+            slot = player_games[skill_game]["slot"]
+            pre_skill = PLAYER_SKILLS[skill_game][slot]
+        performances = []
+        for i in range(GAMES_TO_CONSIDER):
+            if idx - GAMES_TO_CONSIDER + i < 0:
+                performances.append(DEFAULT_PLAYER_SKILL)
             else:
-                slot = PLAYER_GAMES[player_id][next_game]["slot"]
-                next_performance.append(PLAYER_PERFORMANCES[next_game][slot])
-        batch["player_pre_skills"].append(pre_skill)
-        batch["player_performances"].append(performance)
-        batch["player_next_performances"].append(next_performance)
-        batch["match_ids"].append(match_id)
+                game = player_games["all"][idx - GAMES_TO_CONSIDER + i]
+                slot = player_games[game]["slot"]
+                performances.append(PLAYER_PERFORMANCES[game][slot])
+        if idx == num_games - 1:
+            break
+        else:
+            slot = player_games[match_id]["slot"]
+            next_performance = PLAYER_PERFORMANCES[match_id][slot][:int(len(DEFAULT_PLAYER_SKILL) / 2)]
+        batch["player_pre_skill"].append(pre_skill)
+        batch["player_performance"].append(performances)
+        batch["player_next_performance"].append(next_performance)
+        batch["target_game"].append(match_id)
     return batch
 
 
-def update_player_skills(match_ids, skills):
-    for idx, match_id in enumerate(match_ids):
-        match_data = get_match_data(match_id)
-        player_ids = []
-        for player in match_data["players"]:
-            player_ids.append(player["account_id"])
-        player_skills = skills[idx]
-        for idx2, player_id in enumerate(player_ids):
-            skill = player_skills[idx2]
-            next_game = PLAYER_GAMES[player_id][match_id]["next"]
-            if next_game:
-                slot = PLAYER_GAMES[player_id][next_game]["slot"]
-                PLAYER_SKILLS[match_id][slot] = skill
+def update_player_skills(player_id: int, target_ids: list, skills: list):
+    for idx, match_id in enumerate(target_ids):
+        slot = PLAYER_GAMES[player_id][match_id]["slot"]
+        PLAYER_SKILLS[match_id][slot] = skills[idx]
+
+
+def get_skill(player_id: int, match_id: int):
+    if player_id not in PLAYER_GAMES:
+        print("Player not found: {}".format(player_id), file=sys.stderr)
+        return DEFAULT_PLAYER_SKILL
+    player_games = PLAYER_GAMES[player_id]
+    match_list = player_games["all"]
+    match_list.sort()
+    idx = bisect(match_list, match_id)
+    if idx == len(match_list):
+        idx = -1
+    target_id = match_list[idx]
+    slot = player_games[target_id]["slot"]
+    return PLAYER_SKILLS[target_id][slot]
+
+
+def create_player_games(match_list: list):
+    for match_id in match_list:
+        for player in MATCHES[match_id]["players"]:
+            player_id = player["account_id"]
+            if player_id not in PLAYER_GAMES:
+                PLAYER_GAMES[player_id] = {}
+                PLAYER_GAMES[player_id]["all"] = []
+            player_set = PLAYER_GAMES[player_id]
+            if len(player_set["all"]) > 0:
+                prev_match_id = player_set["all"][-1]
+                player_set[prev_match_id]["next"] = match_id
+                player_set[match_id] = {"prev": prev_match_id}
+            else:
+                player_set[match_id] = {"prev": None}
+
+            slot = player["player_slot"]
+            if slot > 10:
+                slot = slot - 123  # - 128 + 5
+            player_set[match_id]["slot"] = slot
+            player_set[match_id]["next"] = None
+            player_set["all"].append(match_id)
+
+
+def split_list(match_list: list, ratio=0.8):
+    match_list = copy.deepcopy(match_list)
+    num = int((1 - ratio) * len(match_list))
+    random.shuffle(match_list)
+    test = match_list[:num]
+    train = match_list[num:]
+    test = test[len(test) % BATCH_SIZE:]
+    train = train[len(train) % BATCH_SIZE:]
+    test.sort()
+    train.sort()
+    return train, test
+
+
+def split_into_chucks(match_list: list, num_of_chunks=5):
+    match_list = copy.deepcopy(match_list)
+    random.shuffle(match_list)
+    size_of_chuck = int(len(match_list) / num_of_chunks)
+    return [match_list[i:i + size_of_chuck] for i in range(0, len(match_list), size_of_chuck)]
+
+
+def create_random_skill():
+    return list(np.random.rand(PLAYER_DIM) * 2 - 1) + [1] * PLAYER_DIM
