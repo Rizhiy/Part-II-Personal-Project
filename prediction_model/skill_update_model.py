@@ -8,7 +8,7 @@ player_performance = tf.placeholder(tf.float32, shape=(None, GAMES_TO_CONSIDER, 
 player_next_performance = tf.placeholder(tf.float32, shape=(None, PLAYER_DIM))
 
 # Only one network here, since we are only doing forward pass
-nn = make_bigger_sql_nn(PLAYER_DIM * 2 + GAMES_TO_CONSIDER * PLAYER_DIM * 2, PLAYER_DIM * 2)
+nn = make_bigger_sql_nn((1 + GAMES_TO_CONSIDER) * PLAYER_DIM * 2, PLAYER_DIM * 2)
 
 player_performance_split = tf.split(player_performance, GAMES_TO_CONSIDER, axis=1)
 for i in range(GAMES_TO_CONSIDER):

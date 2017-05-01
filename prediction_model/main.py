@@ -6,8 +6,7 @@ import numpy as np
 import tensorflow as tf
 
 from data_analysis.Graphs import density_hist
-from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES, \
-    BOSTON_MAJOR_LAST_GAME_ID, TI_5_LAST_GAME_ID, GAMES_TO_CONSIDER
+from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES
 from prediction_model.match_processing_model import player_results_split, player_to_results_param0, \
     player_to_results_param1, \
     loss as inference_loss, player_performance_estimate as match_performances, player_skills, player_results, \
@@ -22,7 +21,7 @@ test_result = player_results_split[0]
 test2_result = player_to_results_param0[0] * player_to_results_param1[0]
 
 inference_train_step = tf.train.AdamOptimizer().minimize(inference_loss)
-update_train_step = tf.train.AdamOptimizer(1e-4).minimize(update_loss)
+update_train_step = tf.train.AdamOptimizer().minimize(update_loss)
 init = tf.global_variables_initializer()
 SESSION.run(init)
 
@@ -48,7 +47,7 @@ file_name = "predictions.pkl"
 
 if RETRAIN:
     while True:
-        if stopping_counter > 5 and pass_num > 10:
+        if stopping_counter > 5 and pass_num > 15:
             break
         if phase:
             batch = get_new_batch(counter, train_list, num_train_batches)
@@ -120,8 +119,8 @@ if RETRAIN:
             else:
                 team_skills = tf.concat([team1_skill, team0_skill], axis=1)
             player_to_result_input = tf.concat([player_skills_split[i], team_skills], axis=1)
-            k, theta = make_k_and_theta(player_result_nn, player_to_result_input)
-            predicted_player_result.append(k * theta)
+            param0, param1 = make_mu_and_sigma(player_result_nn, player_to_result_input)
+            predicted_player_result.append(param0)
         predicted_team_result = tf.sigmoid(team_result_nn(tf.concat([team0_skill, team1_skill], axis=1)))
 
         predicted_result = SESSION.run(predicted_player_result)
@@ -131,13 +130,10 @@ if RETRAIN:
                 predicted.append(predicted_result[i][player])
                 result.append(batch["player_results"][i][player])
                 error.append(predicted_result[i][player] - batch["player_results"][i][player])
-                # print()
-                # print("Predicted: {}".format(predicted_result[0][0]))
-                # print("Actual:    {}".format(batch["player_results"][0][0]))
-                # print("Error:     {}".format(predicted_result[0][0] - batch["player_results"][0][0]))
-    pickle.dump({"predicted": predicted, "result": result, "error": error}, open(file_name, "wb"))
-
-data = pickle.load(open(file_name, "rb"))
+    data = {"predicted": predicted, "result": result, "error": error}
+    pickle.dump(data, open(file_name, "wb"))
+else:
+    data = pickle.load(open(file_name, "rb"))
 
 predicted = np.swapaxes(data["predicted"], 0, 1)
 error = np.swapaxes(data["error"], 0, 1)

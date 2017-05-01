@@ -11,7 +11,7 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, PLAYER_DIM
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER
 
 
 class Stats(Enum):
@@ -148,7 +148,7 @@ def get_match_arrays(match_id):
     if match_id not in PLAYER_SKILLS:
         skills = []
         for _ in range(10):
-            skills.append(create_random_skill())
+            skills.append(DEFAULT_PLAYER_SKILL)
         PLAYER_SKILLS[match_id] = skills
     if "radiant_win" not in match_stats["match_data"]:
         match_stats["match_data"]["radiant_win"] = True
@@ -345,7 +345,3 @@ def split_into_chucks(match_list: list, num_of_chunks=5):
     random.shuffle(match_list)
     size_of_chuck = int(len(match_list) / num_of_chunks)
     return [match_list[i:i + size_of_chuck] for i in range(0, len(match_list), size_of_chuck)]
-
-
-def create_random_skill():
-    return list(np.random.rand(PLAYER_DIM) * 2 - 1) + [1] * PLAYER_DIM

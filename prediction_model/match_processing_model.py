@@ -23,7 +23,7 @@ team_result_nn = make_sql_nn(TEAM_DIM * NUM_OF_TEAMS, TEAM_RESULTS_DIM)
 
 # Upwards pass
 result_to_team_nn = make_sql_nn(PLAYER_RESULT_DIM * PLAYERS_PER_TEAM * NUM_OF_TEAMS + TEAM_RESULTS_DIM, TEAM_DIM * 2)
-player_skill_nn = make_sql_nn(PLAYER_RESULT_DIM + TEAM_DIM * 2, PLAYER_DIM * 2)
+player_skill_nn = make_sql_nn(PLAYER_RESULT_DIM + TEAM_DIM, PLAYER_DIM * 2)
 
 player_results_split = tf.split(player_results, PLAYERS_PER_TEAM * NUM_OF_TEAMS, axis=1)
 player_skills_split = tf.split(player_skills, PLAYERS_PER_TEAM * NUM_OF_TEAMS, axis=1)
@@ -44,30 +44,31 @@ team1_performance_mu, team1_performance_sigma = make_mu_and_sigma(result_to_team
 team1_performance = team1_performance_mu + team1_performance_sigma * team1_epsilon
 
 player_performance = []
-player_performance_estimate = []
 player_performance_sigma = []
+player_performance_estimate = []
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     if i < PLAYERS_PER_TEAM:
-        team_performance = tf.concat([team0_performance, team1_performance], axis=1)
+        team_performance = team0_performance
     else:
-        team_performance = tf.concat([team1_performance, team0_performance], axis=1)
+        team_performance = team1_performance
 
     player_performance_input = tf.concat([player_results_split[i], team_performance],
                                          axis=1)
     mu, sigma = make_mu_and_sigma(player_skill_nn, player_performance_input)
+    player_performance_estimate.append(tf.concat([mu, sigma], axis=1))
     player_performance_sigma.append(sigma)
     player_performance.append(mu + sigma * player_epsilons[i])
-    player_performance_estimate.append(tf.concat([mu, sigma], axis=1))
 
 player_to_team0_input = []
-player_to_team1_input = []
 for i in range(PLAYERS_PER_TEAM):
     player_to_team0_input.append(player_performance[i])
-    player_to_team1_input.append(player_performance[PLAYERS_PER_TEAM + i])
 player_to_team0_input = tf.concat(player_to_team0_input, axis=1)
-player_to_team1_input = tf.concat(player_to_team1_input, axis=1)
-
 player_to_team0_mu, player_to_team0_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team0_input)
+#
+player_to_team1_input = []
+for i in range(PLAYERS_PER_TEAM):
+    player_to_team1_input.append(player_performance[PLAYERS_PER_TEAM + i])
+player_to_team1_input = tf.concat(player_to_team1_input, axis=1)
 player_to_team1_mu, player_to_team1_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team1_input)
 
 player_to_results_param0 = []
@@ -78,7 +79,7 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     else:
         team_performances = tf.concat([team1_performance, team0_performance], axis=1)
     player_to_result_input = tf.concat([player_performance[i], team_performances], axis=1)
-    param0, param1 = make_k_and_theta(player_result_nn, player_to_result_input)
+    param0, param1 = make_mu_and_sigma(player_result_nn, player_to_result_input)
     player_to_results_param0.append(param0)
     player_to_results_param1.append(param1)
 
@@ -86,7 +87,7 @@ team_result_logit = team_result_nn(tf.concat([team0_performance, team1_performan
 
 log_result = 0
 for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
-    first = log_gamma(player_results_split[i], player_to_results_param0[i], player_to_results_param1[i])
+    first = log_normal(player_results_split[i], player_to_results_param0[i], player_to_results_param1[i])
     log_result += first
     mu, sigma = tf.split(player_skills_split[i], 2, axis=1)
     second = entropy(player_performance_sigma[i])
