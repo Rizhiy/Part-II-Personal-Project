@@ -12,3 +12,5 @@
 *.ps
 *.ilg
 *.ind
+*.pygtex
+_minted*
