@@ -589,7 +589,7 @@ Multiplication is expensive, to improve performance of the system we can take th
 \begin{equation}
 \text{loss} = \log\left(\prod_{p\subset P}p(x)\right) = \sum_{p\subset P}\log(p(x))
 \end{equation}
-This does not break the system, since all probabilities are positive and log is an increasing function.
+This does not break the system, since all probabilities are positive and log is a monotonically increasing function.
 By taking the log of different parts of pdf itself we can improve the efficiency even more, e.g. Gaussian from equation \ref{eq:gaussian-loss} becomes:
 \begin{equation}
 {loss}(x,\mu,\sigma) = \log(2\pi)/2+\log(\sigma)+\frac{(x-\mu)^2}{2\sigma^2}
