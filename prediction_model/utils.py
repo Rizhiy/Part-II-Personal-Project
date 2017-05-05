@@ -43,8 +43,8 @@ def log_normal(x, mu, sigma):
 
 
 def entropy(sigma):
-    entropy = min_log(2 * np.pi) / 2 + min_log(sigma) + 1
-    return tf.reduce_sum(entropy, 1)
+    e = min_log(2 * np.pi) / 2 + min_log(sigma) + 1
+    return tf.reduce_sum(e, 1)
 
 
 def log_bernoulli(y, p):
@@ -54,7 +54,6 @@ def log_bernoulli(y, p):
 
 
 def log_gamma(x, k, theta):
-    # TODO: Check tf.lgamma
     error = (k - 1) * min_log(x) - (tf.lgamma(k) + k * min_log(theta) + x / theta)
     return tf.reduce_sum(error, 1)
 
@@ -192,13 +191,17 @@ def create_data_set():
     for match_id in DATASET["player_results"]:
         for i in DATASET["player_results"][match_id]:
             results.append(i)
+    # Remove outliers
+    lower_clip = np.percentile(results, 1, 0)
+    higher_clip = np.percentile(results, 99, 0)
+    results = np.clip(results, lower_clip, higher_clip)
     scalar = MinMaxScaler(feature_range=(0, 1))
     scalar.fit(results)
     # temp fix, not fixing since not gonna use this in the future
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     for match_id in DATASET["player_results"]:
         for idx, stats in enumerate(DATASET["player_results"][match_id]):
-            DATASET["player_results"][match_id][idx] = scalar.transform(stats)
+            DATASET["player_results"][match_id][idx] = scalar.transform(np.clip(stats, lower_clip, higher_clip))
 
 
 def get_new_batch(seed, match_list, num_of_batches):
@@ -266,7 +269,7 @@ def get_skill_batch(player_id):
         performances = []
         for i in range(GAMES_TO_CONSIDER):
             if idx - GAMES_TO_CONSIDER + i < 0:
-                performances.append(DEFAULT_PLAYER_SKILL)
+                performances.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
             else:
                 game = player_games["all"][idx - GAMES_TO_CONSIDER + i]
                 slot = player_games[game]["slot"]
@@ -287,6 +290,7 @@ def update_player_skills(player_id: int, target_ids: list, skills: list):
     for idx, match_id in enumerate(target_ids):
         slot = PLAYER_GAMES[player_id][match_id]["slot"]
         PLAYER_SKILLS[match_id][slot] = skills[idx]
+        PLAYER_SKILLS[match_id] = np.array(PLAYER_SKILLS[match_id])
 
 
 def get_skill(player_id: int, match_id: int):

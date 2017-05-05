@@ -1,4 +1,5 @@
 import pickle
+import random
 import sys
 
 import matplotlib.pyplot as plt
@@ -6,10 +7,12 @@ import numpy as np
 import tensorflow as tf
 
 from data_analysis.Graphs import density_hist
-from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES
+from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES, \
+    BOSTON_MAJOR_LAST_GAME_ID, PP, PLAYER_SKILLS, TI_6_LAST_GAME_ID, PLAYER_PERFORMANCES, \
+    TI_5_LAST_GAME_ID
 from prediction_model.match_processing_model import player_results_split, player_to_results_param0, \
     player_to_results_param1, \
-    loss as inference_loss, player_performance_estimate as match_performances, player_skills, player_results, \
+    loss as inference_loss, player_performance as match_performances, player_skills, player_results, \
     team_results, \
     player_to_team_nn, player_result_nn, team_result_nn
 from prediction_model.skill_update_model import loss as update_loss, player_pre_skill, player_performance, \
@@ -27,9 +30,12 @@ SESSION.run(init)
 
 create_data_set()
 
-# MATCH_LIST = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > TI_5_LAST_GAME_ID]
+MATCH_LIST = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > TI_5_LAST_GAME_ID]
 
 train_list, test_list = split_list(MATCH_LIST, 0.9)
+if TI_6_LAST_GAME_ID in test_list:
+    test_list.remove(TI_6_LAST_GAME_ID)
+    train_list.append(TI_6_LAST_GAME_ID)
 
 num_train_batches = int(len(train_list) / BATCH_SIZE)
 
@@ -38,18 +44,26 @@ create_player_games(train_list)
 pass_num = 0
 result = 0
 alpha = .9
-phase = True
+phase = 100
 counter = 0
 min_update_loss = np.infty
 stopping_counter = 0
+adjustment = False
+stopping_pass = 1000
 
 file_name = "predictions.pkl"
 
 if RETRAIN:
     while True:
-        if stopping_counter > 5 and pass_num > 15:
+        random.shuffle(train_list)
+        if stopping_counter > 5 and pass_num > 30:
+            phase = True
+            if not adjustment:
+                adjustment = True
+                stopping_pass = pass_num + 3
+        if pass_num > stopping_pass:
             break
-        if phase:
+        if phase > 0:
             batch = get_new_batch(counter, train_list, num_train_batches)
             _, loss_step, player_performances, test, test2 = SESSION.run(
                 (inference_train_step, inference_loss, match_performances, test_result, test2_result),
@@ -59,11 +73,17 @@ if RETRAIN:
             result = (result * alpha + loss_step) / (1 + alpha)
             store_player_performances(batch["match_ids"], np.swapaxes(player_performances, 0, 1))
             if batch["switch"]:
-                phase = not phase
+                phase -= 1
                 pass_num += 1
                 print("Pass {}".format(pass_num))
                 print("Inference loss:\t\t{:4d}".format(int(result)))
+                print("Actual:      {}".format(test[0]))
+                print("Inferred:    {}".format(test2[0]))
+                print("Performance: {}".format(player_performances[0][0]))
+                print("Prior:       {}".format(batch["player_skills"][0][0]))
                 result = 0
+            if adjustment:
+                print("Adjustment loss:\t{:4d}".format(int(result)), end='\r')
             counter += 1
         else:
             player_loss = []
@@ -84,10 +104,10 @@ if RETRAIN:
                 min_update_loss = result
             else:
                 stopping_counter += 1
-            phase = not phase
+            phase = 10
             print("Skill update loss:\t{:4d}".format(int(result)))
             result = 0
-        if np.math.isnan(result):
+        if np.math.isnan(loss_step):
             print("Nan loss", file=sys.stderr)
             break
 
@@ -119,8 +139,8 @@ if RETRAIN:
             else:
                 team_skills = tf.concat([team1_skill, team0_skill], axis=1)
             player_to_result_input = tf.concat([player_skills_split[i], team_skills], axis=1)
-            param0, param1 = make_mu_and_sigma(player_result_nn, player_to_result_input)
-            predicted_player_result.append(param0)
+            param0, param1 = make_k_and_theta(player_result_nn, player_to_result_input)
+            predicted_player_result.append(param0 * param1)
         predicted_team_result = tf.sigmoid(team_result_nn(tf.concat([team0_skill, team1_skill], axis=1)))
 
         predicted_result = SESSION.run(predicted_player_result)
@@ -129,11 +149,14 @@ if RETRAIN:
             for player in range(len(predicted_result[i])):
                 predicted.append(predicted_result[i][player])
                 result.append(batch["player_results"][i][player])
-                error.append(predicted_result[i][player] - batch["player_results"][i][player])
+                error.append(batch["player_results"][i][player] - predicted_result[i][player])
     data = {"predicted": predicted, "result": result, "error": error}
     pickle.dump(data, open(file_name, "wb"))
 else:
     data = pickle.load(open(file_name, "rb"))
+
+PP.pprint(PLAYER_SKILLS[TI_6_LAST_GAME_ID])
+PP.pprint(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
 
 predicted = np.swapaxes(data["predicted"], 0, 1)
 error = np.swapaxes(data["error"], 0, 1)
