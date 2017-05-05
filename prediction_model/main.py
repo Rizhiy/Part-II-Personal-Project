@@ -9,7 +9,7 @@ import tensorflow as tf
 from data_analysis.Graphs import density_hist
 from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES, \
     BOSTON_MAJOR_LAST_GAME_ID, PP, PLAYER_SKILLS, TI_6_LAST_GAME_ID, PLAYER_PERFORMANCES, \
-    TI_5_LAST_GAME_ID
+    TI_5_LAST_GAME_ID, MANILA_MAJOR_LAST_GAME_ID
 from prediction_model.match_processing_model import player_results_split, player_to_results_param0, \
     player_to_results_param1, \
     loss as inference_loss, player_performance as match_performances, player_skills, player_results, \
@@ -29,7 +29,7 @@ SESSION.run(init)
 
 create_data_set()
 
-MATCH_LIST = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > TI_5_LAST_GAME_ID]
+MATCH_LIST = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > MANILA_MAJOR_LAST_GAME_ID]
 
 train_list, test_list = split_list(MATCH_LIST, 0.9)
 if TI_6_LAST_GAME_ID in test_list:
@@ -43,7 +43,7 @@ create_player_games(train_list)
 pass_num = 0
 result = 0
 alpha = .9
-phase = 10
+phase = 5
 counter = 0
 min_update_loss = np.infty
 stopping_counter = 0
@@ -104,7 +104,7 @@ if RETRAIN:
                 min_update_loss = result
             else:
                 stopping_counter += 1
-            phase = 10
+            phase = 2
             print("Skill update loss:\t{:4d}".format(int(result)))
             result = 0
         if np.math.isnan(loss_step):
@@ -156,7 +156,7 @@ else:
     data = pickle.load(open(file_name, "rb"))
 
 PP.pprint(PLAYER_SKILLS[TI_6_LAST_GAME_ID])
-PP.pprint(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
+# PP.pprint(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
 
 predicted = np.swapaxes(data["predicted"], 0, 1)
 error = np.swapaxes(data["error"], 0, 1)

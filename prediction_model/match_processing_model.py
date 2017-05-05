@@ -58,14 +58,14 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     player_performance.append(mu + sigma * player_epsilons[i])
 
 player_to_team0_input = []
-for i in range(PLAYERS_PER_TEAM):
-    player_to_team0_input.append(player_performance[i])
-player_to_team0_input = tf.concat(player_to_team0_input, axis=1)
-player_to_team0_mu, player_to_team0_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team0_input)
-#
 player_to_team1_input = []
 for i in range(PLAYERS_PER_TEAM):
+    player_to_team0_input.append(player_performance[i])
     player_to_team1_input.append(player_performance[PLAYERS_PER_TEAM + i])
+
+player_to_team0_input = tf.concat(player_to_team0_input, axis=1)
+player_to_team0_mu, player_to_team0_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team0_input)
+
 player_to_team1_input = tf.concat(player_to_team1_input, axis=1)
 player_to_team1_mu, player_to_team1_sigma = make_mu_and_sigma(player_to_team_nn, player_to_team1_input)
 

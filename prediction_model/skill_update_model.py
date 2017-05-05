@@ -24,9 +24,10 @@ log_result = 0
 q_input = tf.concat([player_pre_skill, player_performance_new], axis=1)
 post_skill_mu, post_skill_sigma = make_mu_and_sigma(q, q_input)
 log_result -= entropy(post_skill_sigma)
-performance_sample = post_skill_mu + post_skill_sigma * epsilon
+skill_sample = post_skill_mu + post_skill_sigma * epsilon
+log_result += log_normal(skill_sample,0.,1.)
 
-player_post_skill, sigma = make_mu_and_sigma(p, performance_sample)
+player_post_skill, sigma = make_mu_and_sigma(p, skill_sample)
 log_result += log_normal(player_next_performance, player_post_skill, sigma)
 
 post_skill = tf.concat([player_post_skill, sigma], axis=1)
