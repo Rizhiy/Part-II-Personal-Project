@@ -13,8 +13,7 @@ from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, 
 from prediction_model.match_processing_model import player_results_split, player_to_results_param0, \
     player_to_results_param1, \
     loss as inference_loss, player_performance as match_performances, player_skills, player_results, \
-    team_results, \
-    player_to_team_nn, player_result_nn, team_result_nn
+    team_results, player_to_team_nn, player_result_nn, team_result_nn, player_performance_estimate
 from prediction_model.skill_update_model import loss as update_loss, player_pre_skill, player_performance, \
     player_next_performance, post_skill
 from prediction_model.utils import create_data_set, get_new_batch, store_player_performances, get_skill_batch, \
@@ -44,7 +43,7 @@ create_player_games(train_list)
 pass_num = 0
 result = 0
 alpha = .9
-phase = 100
+phase = 10
 counter = 0
 min_update_loss = np.infty
 stopping_counter = 0
@@ -65,8 +64,9 @@ if RETRAIN:
             break
         if phase > 0:
             batch = get_new_batch(counter, train_list, num_train_batches)
-            _, loss_step, player_performances, test, test2 = SESSION.run(
-                (inference_train_step, inference_loss, match_performances, test_result, test2_result),
+            _, loss_step, player_performances, performance_estimate, test, test2 = SESSION.run(
+                (inference_train_step, inference_loss, match_performances, player_performance_estimate, test_result,
+                 test2_result),
                 feed_dict={player_skills: batch["player_skills"],
                            player_results: batch["player_results"],
                            team_results: batch["team_results"]})
