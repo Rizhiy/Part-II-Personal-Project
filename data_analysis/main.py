@@ -3,6 +3,7 @@ import pickle
 
 import matplotlib.pyplot as plt
 from sklearn.linear_model import Ridge
+import numpy as np
 
 import data_analysis.Learning
 from data_analysis import Learning, Graphs
@@ -64,9 +65,10 @@ dataset = Learning.new_format_to_old(dataset)
 # Graphs.prediction_hist(Stats.ASSISTS, regr, dataset)
 
 # Graphs.fit_gaussian(Stats.GPM)
-Graphs.fit_gamma_and_gaussian(Stats.GPM)
+# Graphs.fit_gamma_and_gaussian(Stats.GPM)
 # Graphs.raw_trueskill_winrate(dataset)
 # print("Graphs drawn")
+Graphs.raw_stat_hist(Stats.XPM)
 plt.show()
 
 # selected_features = Learning.choose_features(Stats.GPM, regr, dataset)

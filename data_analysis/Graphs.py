@@ -2,7 +2,7 @@ from enum import Enum
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib import mlab, rc
+from matplotlib import mlab
 from scipy.stats import gaussian_kde, gamma, norm, chisquare
 
 import data_analysis
@@ -13,8 +13,9 @@ def density_hist(data: list, label="", figure=True, title=""):
     if figure:
         plt.figure()
         plt.title(title)
-
     bins = max(data) - min(data)
+    if bins < 2:
+        bins = 50
     data = np.array(data)
     data = data[~np.isnan(data)]  # Remove NaN
     if bins < 50:
@@ -24,7 +25,7 @@ def density_hist(data: list, label="", figure=True, title=""):
             density = gaussian_kde(data)
         except MemoryError:
             density = gaussian_kde(data[::100])
-        xs = np.linspace(min(data), np.percentile(data, 99), 128)
+        xs = np.linspace(min(data), max(data), 128)
         density.covariance_factor = lambda: .25
         density._compute_covariance()
         plt.plot(xs, density(xs), label=label)
@@ -58,10 +59,10 @@ def fit_gamma_and_gaussian(stat: Enum):
     mean = np.mean(data)
     variance = np.var(data)
     std = np.sqrt(variance)
-    k = np.square(mean)/variance
-    theta = variance/mean
+    k = np.square(mean) / variance
+    theta = variance / mean
     max_value = np.percentile(data, 99)
-    bins = int(max_value/16)
+    bins = int(max_value / 16)
     plt.rc('text', usetex=True)
     plt.rc('font', family='serif')
     plt.rc('font', size=16)
@@ -86,7 +87,12 @@ def raw_stat_hist(stat: Enum):
     for match in data_analysis.MATCH_LIST:
         for player in data_analysis.MATCHES[match]["players"]:
             data.append(player[stat.value])
-    density_hist(data, "Actual values")
+    density_hist(data, "Distribution of values")
+    value = np.percentile(data, 99, 0)
+    plt.axvline(x=value, label="99% percentile", color='r')
+    value = np.percentile(data, 1, 0)
+    plt.axvline(x=value, label="1% percentile", color='g')
+    plt.legend()
 
 
 # TODO: there is quite a bit repetition in these methods need to refactor.
