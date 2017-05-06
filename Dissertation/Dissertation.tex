@@ -458,7 +458,7 @@ Most of them map the value of $x$ onto a specific range, which is useful if the 
 Normally the activation function is based on which layer the perceptron is in.
 Activation functions such as ReLU are also useful in hidden layers to produce a non-linear transformation.
 
-\paragraph{Types of NN}
+\paragraph{Type of NN}
 There are many types of neural networks, I decided to use the simplest one: fully connected, feedforward neural networks.
 \begin{description}
 \item[Fully connected] Input for a perceptron in layer $n$ is composed of output of each perceptron in layer $n-1$.
@@ -583,6 +583,7 @@ There are five variables in the model: $\bs{x},\bs{y},\bs{t},\bs{p}$.
 To make predictions we would like to calculate $P(\bs{x}\mid \bs{p})$ and $P(\bs{y}\mid \bs{p})$.
 As was said above, calculating this directly is expensive, therefore we need to modify them to fit the model.
 We get:
+%TODO Add LVI equations
 \begin{equation}
 P(\bs{x}_i \mid \bs{t},\bs{p})\quad \text{and} \quad P(\bs{y} \mid \bs{t},\bs{p})
 \end{equation}
@@ -754,8 +755,39 @@ The designed model includes several hyper-parameters which have to be adjusted f
 They are ranked in order of importance, adjusting the first one gives the most accuracy increase, but also increases required resources the most.
 %TODO add figure here with hyper-parameter seach
 
-\chapter{Conclusions}
+\section{Performance Evaluation}
+The system is designed such there is as little coupling as possible between the two models.
+This allowed me to work on each model independently and also made evaluation simpler by allowing me to evaluate both models separately from each other.
+\subsection{Prediction model evaluation}
+There are two stages in the training and evaluation of the predictive model: \emph{performance inference} and \emph{prediction}.
 
+During the skill inference stage the model is optimised to provide an accurate estimate of player performance estimate in a particular game, such that the skill update model can accurately infer overall player skill.
+After skills of all player are estimated to desired accuracy, the skills of the players are fixed in place and prediction training stage begins.
+
+During prediction training stage the model is optimised to produce the most accurate estimate of game results based on the skill estimates of all players in the game.
+
+\subsection{Skill update model evaluation}
+The accuracy of prediction model depends directly on how accurate the skill estimations of the skill update models are, therefore it is important that skill estimation is as accurate as possible.
+
+
+\chapter{Conclusions}
+\section{Summary of Achievements}
+\section{Future work and Improvement Ideas}
+During the work on this project I had many ideas about how different things can be done and what methods can be used.
+Unfortunately, I didn't have enough time to try many of them, but I think they should definitely be tested in the future, these include:
+\begin{description}
+\item[Using Kalman filter for skills updates]
+The system represents skills and performances as gaussians, Kalman filter is a perfect candidate for the task.
+\item[Using recurrent neural network for skill update]
+The skill update model treats player performances as observations, therefore using RNN with previous $n$ games as input might produce better results.
+\item[Collecting and using more results for each match]
+The current system only used a very small amount of data available about the game, using more information about each match would definitely improve performance, it would be interesting to know how much.
+\end{description}
+\section{Lessons Learned}
+The main lesson I learned, is to not overestimate my ability when working on novel projects.
+While the work done during improvement of an existing feature/product can be hard and challenging, usually the possible improvements can be estimated from similar work, but when working on new idea the results can be much harder to predict since what works in one area might not work in the other.
+
+The second lesson I learned, is that machine learning is not the all-powerful tool that can solve all problems and that most of the time there are still a lot of trade-offs to be made.
 
 \printbibliography[heading=bibintoc,title={Bibliography}]
 
