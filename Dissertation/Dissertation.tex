@@ -726,10 +726,34 @@ Therefore right at the start we can split our data into two parts: \emph{train/v
 \emph{Train/validation} set will be used to train the algorithm and adjust hyper-parameters.
 \emph{Test} set will be used for evaluation of the algorithm.
 
-To adjust hyper-parameters fairly we need to reflect evaluation procedure during our training.
-For that purpose the train/validation set is further split into two parts: \emph{train} and \emph{validation}.
+\subsection{Stopping Condition}
+Deciding on the length of training period is a difficult tasks.
+If the training period is not long enough the algorithm will be under-fit.
+Similarly, if the training period is too long, the algorithm might over-fit, even if measures are taken to prevent over-fitting time will still be wasted.
+There are several methods to prevent over-fitting:
+\begin{description}
+\item[Using simple models]
+If the model has the correct complexity, it will only be able to learn the data and not the noise.
+Another benefit of this approach is that training and prediction times are smaller.
+Using this method the model can be trained until loss stops decreasing.
+Unfortunately, if the model is too simple the model can suffer from under-fitting.
+
+\item[Regularization]
+Another approach is to penalise complexity in the model.
+For example the size of weights in neural networks can be limited to a certain value.
+Unfortunately, this can also lead to under-fitting.
+
+\item[Validation] 
+Over-fitting can also be prevented by emulating testing scenario during training.
+For that purpose the train/validation part is split into train and validation.
+The algorithm is trained on train part and after every iteration it is tested on validation part.
+When the validation error stops decreasing the training is stopped.
+\end{description}
+I decided to use validation since it does not suffer from potential of under-fitting and also has added benefit of allowing selection of hyper-parameters.
+The best hyper-parameter combination can be found by comparing validation results of each combination.
+
 \subsection{Cross-validation}
-If we reuse the same part for validation, we run the risk of over-fitting our algorithm to that particular part of the dataset.
+If only one part of training data is used for validation, it might not properly represent the performance of the algorithm.
 To combat that, we can use cross-validation: we run train/validation multiple times, each time picking new set to use for validation.
 To ensure complete coverage of the train-set we can use \emph{k-fold cross-validation}: 
 \begin{enumerate}
@@ -740,11 +764,10 @@ Record the result.
 \item Average the results.
 \end{enumerate}
 
-\subsection{Stopping Condition}
-Deciding on the length of training period is a difficult tasks.
-If the training period is not long enough the algorithm will be under-fit and won't perform at its optimum.
-Similarly, if the training period is too long, the algorithm might over-fit and again won't perform at its optimum;
-even if measures are taken to prevent over-fitting time will still be wasted.
+
+
+
+
 \section{Hyper-parameter selection}
 The designed model includes several hyper-parameters which have to be adjusted for each game\footnote{There are extra hyper-parameters such as optimisation rate, which are not specific to any game. All of the hyper-parameters which I considered I listed in appendix  \ref{hypeparameter-list}.}.
 \begin{enumerate}
@@ -778,8 +801,10 @@ Unfortunately, I didn't have enough time to try many of them, but I think they s
 \begin{description}
 \item[Using Kalman filter for skills updates]
 The system represents skills and performances as gaussians, Kalman filter is a perfect candidate for the task.
-\item[Using recurrent neural network for skill update]
-The skill update model treats player performances as observations, therefore using RNN with previous $n$ games as input might produce better results.
+
+\item[Using RNN for skill update]
+The skill update model treats player performances as observations, therefore using recurrent neural networks with previous $n$ games as input might produce better results.
+
 \item[Collecting and using more results for each match]
 The current system only used a very small amount of data available about the game, using more information about each match would definitely improve performance, it would be interesting to know how much.
 \end{description}
