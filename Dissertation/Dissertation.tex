@@ -750,7 +750,7 @@ The algorithm is trained on train part and after every iteration it is tested on
 When the validation error stops decreasing the training is stopped.
 \end{description}
 I decided to use validation since it does not suffer from potential of under-fitting and also has added benefit of allowing selection of hyper-parameters.
-The best hyper-parameter combination can be found by comparing validation results of each combination.
+The best hyper-parameter combination can be found by first training the system using each combination and validating it, and then comparing the results of each validation.
 
 \subsection{Cross-validation}
 If only one part of training data is used for validation, it might not properly represent the performance of the algorithm.
@@ -764,9 +764,13 @@ Record the result.
 \item Average the results.
 \end{enumerate}
 
+\subsection{Split ratio}
+When splitting the dataset into train/validation and test parts it is important to keep in mind the total size of the dataset.
+Making the size of the test part too small can lead to statistically insignificant results and also increase the chance of sampling error.
+On the other hand making the size of training data too small can lead to under-fitting for the model.
 
-
-
+These problems usually only apply to small population sizes and since my population size was 14000 matches, I decided to use standard 80:20 train/test split using the Pareto principle.
+%TODO This sounds a bit shit, put more work here
 
 \section{Hyper-parameter selection}
 The designed model includes several hyper-parameters which have to be adjusted for each game\footnote{There are extra hyper-parameters such as optimisation rate, which are not specific to any game. All of the hyper-parameters which I considered I listed in appendix  \ref{hypeparameter-list}.}.
