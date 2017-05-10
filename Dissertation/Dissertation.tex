@@ -22,6 +22,8 @@
 \usepackage{tikz}
 \usetikzlibrary{fit,positioning,bayesnet}
 \usetikzlibrary{arrows}
+% Layer separation for neural network figure
+\def\layersep{2.5cm}
 
 % Indent description lists
 \usepackage{enumitem}
@@ -434,6 +436,50 @@ Therefore, I decided to make an assumption that players skill in a game can be d
 Such $n$ will be different for each game and therefore is a hyper parameter in my model.
 Since the system can never be sure on the exact skill values for each player, skills of each player are represented as $n$ Gaussian distributions.
 \subsection{Neural networks}
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[shorten >=1pt,->,draw=black!50, node distance=\layersep]
+    \tikzstyle{every pin edge}=[<-,shorten <=1pt]
+    \tikzstyle{neuron}=[circle,fill=black!25,minimum size=17pt,inner sep=0pt]
+    \tikzstyle{input neuron}=[neuron, fill=green!50];
+    \tikzstyle{output neuron}=[neuron, fill=red!50];
+    \tikzstyle{hidden neuron}=[neuron, fill=blue!50];
+    \tikzstyle{annot} = [text width=4em, text centered]
+
+    % Draw the input layer nodes
+    \foreach \name / \y in {1,...,4}
+    % This is the same as writing \foreach \name / \y in {1/1,2/2,3/3,4/4}
+        \node[input neuron, pin=left:Input \#\y] (I-\name) at (0,-\y) {};
+
+    % Draw the hidden layer nodes
+    \foreach \name / \y in {1,...,5}
+        \path[yshift=0.5cm]
+            node[hidden neuron] (H-\name) at (\layersep,-\y cm) {};
+	
+	% Draw the output layer nodes
+	\foreach \name / \y in {1,...,3}
+        \path[yshift=-0.5cm]
+            node[output neuron,pin={[pin edge={->}]right:Output \#\y}] (O-\name) at (2*\layersep,-\y cm) {};	
+
+    % Connect every node in the input layer with every node in the
+    % hidden layer.
+    \foreach \source in {1,...,4}
+        \foreach \dest in {1,...,5}
+            \path (I-\source) edge (H-\dest);
+
+    % Connect every node in the hidden layer with the output layer
+    \foreach \source in {1,...,5}
+    		\foreach \dest in {1,...,3}
+        		\path (H-\source) edge (O-\dest);
+
+    % Annotate the layers
+    \node[annot,above of=H-1, node distance=1cm] (hl) {Hidden layer};
+    \node[annot,left of=hl] {Input layer};
+    \node[annot,right of=hl] {Output layer};
+\end{tikzpicture}
+\caption{Simple fully connected feedforward neural network with one hidden layer.}
+\label{fig:neural-network}
+\end{figure}
 Because, I decided to use neural networks in my system, I had to learn basic theory behind them and how to construct them.
 Neural networks made up of three types of layers: input, hidden and output.
 The size of the input and output layer are determined by the data being processed, deciding on the size of hidden layers is more difficult.
@@ -459,11 +505,12 @@ Normally the activation function is based on which layer the perceptron is in.
 Activation functions such as ReLU are also useful in hidden layers to produce a non-linear transformation.
 
 \paragraph{Type of NN}
-There are many types of neural networks, I decided to use the simplest one: fully connected, feedforward neural networks.
+There are many types of neural networks, I decided to use the simplest one: fully connected, feedforward neural network.
 \begin{description}
 \item[Fully connected] Input for a perceptron in layer $n$ is composed of output of each perceptron in layer $n-1$.
 \item[Feedforward] The data only flows one way in the network, there are no loops.
 \end{description}
+An example of a structure of such neural network can be seen in figure \ref{fig:neural-network}.
 
 \subsection{System overview}
 
@@ -602,8 +649,9 @@ P(\bs{x}_i\mid\bs{t},\bs{p}) = P(\bs{x}_i\mid\bs{t},\bs{p}_i)
 \end{equation}
 Doing the same to other parts we get:
 \begin{equation}
-P(\bs{x}_i \mid \bs{t},\bs{p}) = \frac{P(\bs{x}_i\mid\bs{t},\bs{p}_i)P(\bs{t}\mid\bs{p}_i)P(\bs{p}_i)P(\bs{x}_i)}{P(\bs{p}_i\mid\bs{t},\bs{x}_i)P(\bs{t}\mid\bs{x}_i)}\qquad
+P(\bs{x}_i \mid \bs{t},\bs{p}) = \frac{P(\bs{x}_i\mid\bs{t},\bs{p}_i)P(\bs{t}\mid\bs{p})P(\bs{p})P(\bs{x}_i)}{P(\bs{p}_i\mid\bs{t},\bs{x}_i)P(\bs{t}\mid\bs{x}_i)}\qquad
 P(\bs{y} \mid \bs{t},\bs{p}) = \frac{P(\bs{y}\mid\bs{t})P(\bs{t}\mid\bs{p})P(\bs{p})P(\bs{y})}{P(\bs{p}\mid\bs{t})P(\bs{t}\mid\bs{y})}
+\label{eq:split-conditionals}
 \end{equation}
 Which is now expressed in terms of conditional probabilities we can calculate and priors which we know.
 %TODO CHECK THIS
@@ -726,10 +774,17 @@ Therefore right at the start we can split our data into two parts: \emph{train/v
 \emph{Train/validation} set will be used to train the algorithm and adjust hyper-parameters.
 \emph{Test} set will be used for evaluation of the algorithm.
 
-\subsection{Stopping Condition}
+\subsection{Preventing Over-fitting}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{overfitting}
+\caption{Overfitting example.}
+\note{In this case the optimisation should be stopped at the fifth iteration, after which training loss keeps decreasing, but validation loss starts increasing.}
+\label{fig:overfitting}
+\end{figure}
 Deciding on the length of training period is a difficult tasks.
 If the training period is not long enough the algorithm will be under-fit.
-Similarly, if the training period is too long, the algorithm might over-fit, even if measures are taken to prevent over-fitting time will still be wasted.
+Similarly, if the training period is too long, the algorithm might over-fit, as can be seen on figure \ref{fig:overfitting}, even if measures are taken to prevent over-fitting time will still be wasted.
 There are several methods to prevent over-fitting:
 \begin{description}
 \item[Using simple models]
@@ -738,12 +793,12 @@ Another benefit of this approach is that training and prediction times are small
 Using this method the model can be trained until loss stops decreasing.
 Unfortunately, if the model is too simple the model can suffer from under-fitting.
 
-\item[Regularization]
+\item[Model regularization]
 Another approach is to penalise complexity in the model.
 For example the size of weights in neural networks can be limited to a certain value.
 Unfortunately, this can also lead to under-fitting.
 
-\item[Validation] 
+\item[Early stopping] 
 Over-fitting can also be prevented by emulating testing scenario during training.
 For that purpose the train/validation part is split into train and validation.
 The algorithm is trained on train part and after every iteration it is tested on validation part.
@@ -773,32 +828,78 @@ These problems usually only apply to small population sizes and since my populat
 %TODO This sounds a bit shit, put more work here
 
 \section{Hyper-parameter selection}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{hyper-parameter-search}
+\caption{Hyper-parameter search}
+\note{As can be seen, increasing the size of player skills has much bigger effect than changing size of team skills.}
+\label{fig:hyper-parameter-search}
+\end{figure}
 The designed model includes several hyper-parameters which have to be adjusted for each game\footnote{There are extra hyper-parameters such as optimisation rate, which are not specific to any game. All of the hyper-parameters which I considered I listed in appendix  \ref{hypeparameter-list}.}.
 \begin{enumerate}
-\item Ratio of the size of player skills/performance vector to the size of player results vector.
-\item Ratio of the size of team skill vector to the size of player skills vector.
+\item Size of the vector representing player skills.
+\item Size of the vector representing team skills.
 \item Size and structure of each neural network.
 \end{enumerate}
 They are ranked in order of importance, adjusting the first one gives the most accuracy increase, but also increases required resources the most.
-%TODO add figure here with hyper-parameter seach
+
+As can be seen in figure \ref{fig:hyper-parameter-search} the accuracy of the system is mostly dependent on the size of vectors used to represent player skills.
+Increasing the size of team skills does not have much of an effect and in most cases actually decreases the performance of the system.
+If the team skills are more than two times bigger the player skills the model overfits and accuracy is greatly reduced.
+
+This shows the main failure in the model: team skills do not affect the accuracy of the system and therefore we can infer that they are not used by the prediction model.
+Therefore the present system does not take into account the skills of other players in the match and only uses the skill of the relevant player.
 
 \section{Performance Evaluation}
 The system is designed such there is as little coupling as possible between the two models.
 This allowed me to work on each model independently and also made evaluation simpler by allowing me to evaluate both models separately from each other.
 \subsection{Prediction model evaluation}
-There are two stages in the training and evaluation of the predictive model: \emph{performance inference} and \emph{prediction}.
+Prediction model is responsible for two functions in the system:
+\begin{itemize}
+\item Estimating player performance in a particular match
+\item Predicting player results given player skills.
+\end{itemize}
 
-During the skill inference stage the model is optimised to provide an accurate estimate of player performance estimate in a particular game, such that the skill update model can accurately infer overall player skill.
-After skills of all player are estimated to desired accuracy, the skills of the players are fixed in place and prediction training stage begins.
+To evaluate how well different configurations works, pairs of skills and results are taken and split into train/validation parts.
+Then the different configurations are trained and validated on the respective parts.
+After the results for all configurations are obtained, the best configuration is chosen and used to estimate player performances in each match.
+The configuration consists of settings for the five different neural networks from equation \ref{eq:split-conditionals}, namely 
+$p(\bs{y}\mid\bs{t}),\ p(\bs{x}_i \mid \bs{t},\ \bs{p}_i),\ p(\bs{t} \mid \bs{p}),\ q(\bs{p}_i \mid \bs{t},\bs{x}_i),\ q(\bs{t}\mid\bs{x},\bs{y})$.
 
-During prediction training stage the model is optimised to produce the most accurate estimate of game results based on the skill estimates of all players in the game.
-
+Using hyper-parameter search I discovered that the model functions quite well even without any hidden layers, adding a single hidden layer improves performance a bit.
+Increasing the number of hidden layer to two or more gave negligible performance increase and therefore was not used.
+Therefore all five neural networks use a simple one hidden layer configuration.
 \subsection{Skill update model evaluation}
 The accuracy of prediction model depends directly on how accurate the skill estimations of the skill update models are, therefore it is important that skill estimation is as accurate as possible.
+To optimise the skill update model, sets of player skills, performances and next performances are taken and the split into train/validation parts.
+Skill update model uses only one neural network, $p(\bs{p}_{t+1}\mid\bs{s}_t,\bs{p}_t)$, therefore configuration consists only of the structure of this neural network.
+Similarly to prediction model different configurations are trained and validated and the best is chosen.
+The chosen neural network is then used to update the skills of each player at time $t$.
 
+Similarly to neural network in prediction model, neural network without hidden layers worked quite well.
+Although in this model, sufficient improvements have been seen in using up to two hidden layers.
+
+\subsection{Overall system evaluation}
+To evaluate the system overall co-ordinate descent is performed where prediction model and skill update model are optimised alternatively.
+At the start there are no estimates of player skills, therefore the model assumes that all skills are modelled as a standard Gaussian: $\mathcal{N}(0,1)$.
+In most cases the optimisation is quite fast only taking two to five rounds of co-ordinate descent.
+
+The co-ordinate descent follows a a simple procedure:
+\begin{enumerate}
+\item Optimise prediction model and update player performances.
+\item Optimise skill update model and update player skills.
+\item Validate the whole system.
+\item Compare validation result to previous, if it is better save the state of the system and go back to step 1.
+If the result is worse, load back the state of the system from last validation and proceed to next step.
+\item Test the system using the loaded configuration and report the result.
+\end{enumerate}
+The system is tested and validated by running the prediction model using the player skill estimates from appropriate time.
+Since the system uses cross-validation, steps one, two and three are performed $k$ times, once for each fold of $k$-fold cross-validation.
+The validation result in step four is the mean of cross-validation results.
 
 \chapter{Conclusions}
 \section{Summary of Achievements}
+
 \section{Future work and Improvement Ideas}
 During the work on this project I had many ideas about how different things can be done and what methods can be used.
 Unfortunately, I didn't have enough time to try many of them, but I think they should definitely be tested in the future, these include:
