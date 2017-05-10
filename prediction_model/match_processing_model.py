@@ -2,8 +2,8 @@ import tensorflow as tf
 
 from prediction_model import PLAYER_DIM, PLAYERS_PER_TEAM, NUM_OF_TEAMS, PLAYER_RESULT_DIM, TEAM_RESULTS_DIM, TEAM_DIM, \
     BATCH_SIZE
-from prediction_model.utils import make_mu_and_sigma, make_sql_nn, log_normal, log_bernoulli, entropy, \
-    make_k_and_theta, log_gamma
+from prediction_model.utils import make_mu_and_sigma, log_normal, log_bernoulli, entropy, \
+    make_k_and_theta, log_gamma, make_bigger_sql_nn, make_sql_nn
 
 # Do we really need float32? How much faster will float16 be? Same for ints
 player_skills = tf.placeholder(tf.float32, shape=(BATCH_SIZE, PLAYERS_PER_TEAM * NUM_OF_TEAMS, PLAYER_DIM * 2))
@@ -17,7 +17,8 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     player_epsilons.append(tf.random_normal((BATCH_SIZE, PLAYER_DIM,)))
 
 # Upwards pass
-result_to_team_nn = make_sql_nn(PLAYER_RESULT_DIM * PLAYERS_PER_TEAM * NUM_OF_TEAMS + TEAM_RESULTS_DIM, TEAM_DIM * 2)
+result_to_team_nn = make_sql_nn(PLAYER_RESULT_DIM * PLAYERS_PER_TEAM * NUM_OF_TEAMS + TEAM_RESULTS_DIM,
+                                       TEAM_DIM * 2)
 player_skill_nn = make_sql_nn(PLAYER_RESULT_DIM + TEAM_DIM, PLAYER_DIM * 2)
 
 # Downwards pass

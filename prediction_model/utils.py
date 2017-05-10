@@ -58,10 +58,9 @@ def log_gamma(x, k, theta):
     return tf.reduce_sum(error, 1)
 
 
-def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activation='relu'):
+def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
     p = keras.models.Sequential()
-    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, activation=first_activation,
-                kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, kernel_initializer='random_normal'))
     p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
     if dropout:
         p.add(Dropout(.2))
@@ -70,13 +69,19 @@ def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False, first_activati
 
 def make_bigger_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
     p = keras.models.Sequential()
-    p.add(Dense(units=int((in_dim + out_dim) * 2), input_dim=in_dim, activation='relu',
-                kernel_initializer='random_normal'))
-    p.add(Dense(units=int((in_dim + out_dim)), input_dim=in_dim, activation='relu',
-                kernel_initializer='random_normal'))
-    p.add(Dense(units=int((in_dim + out_dim) / 2), input_dim=in_dim, activation='relu',
-                kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim)), input_dim=in_dim, activation='relu', kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim) / 2), activation='relu', kernel_initializer='random_normal'))
     p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
+    if dropout:
+        p.add(Dropout(.2))
+    return p
+
+
+def make_smaller_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
+    p = keras.models.Sequential()
+    p.add(Dense(units=out_dim, input_dim=in_dim, activation='linear', kernel_initializer='random_normal'))
+    if dropout:
+        p.add(Dropout(.2))
     return p
 
 

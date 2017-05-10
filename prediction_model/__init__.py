@@ -3,6 +3,7 @@ import pprint
 
 import numpy as np
 import tensorflow as tf
+from keras.layers.core import K
 
 # ids of some experienced players
 DENDI_ID = 70388657
@@ -26,10 +27,10 @@ PLAYER_RESULT_DIM = 8
 TEAM_RESULTS_DIM = 2
 
 GAMES_TO_CONSIDER = 1
-PLAYER_DIM = int(1 * PLAYER_RESULT_DIM)
-TEAM_DIM = 1 * PLAYER_DIM
+PLAYER_DIM = 8
+TEAM_DIM = 1
 
-RETRAIN = False
+RETRAIN = True
 
 PLAYERS_PER_TEAM = 5
 NUM_OF_TEAMS = 2
@@ -60,5 +61,7 @@ PLAYER_GAMES = {}
 
 # Initialise TensorFlow session
 SESSION = tf.Session()
+
+K.set_learning_phase(True)
 
 print("Initialisation finished")
