@@ -14,7 +14,7 @@ def density_hist(data: list, label="", figure=True, title=""):
         plt.figure()
         plt.title(title)
     bins = max(data) - min(data)
-    if bins < 2:
+    if bins < 10:
         bins = 50
     data = np.array(data)
     data = data[~np.isnan(data)]  # Remove NaN
