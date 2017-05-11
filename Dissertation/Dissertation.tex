@@ -670,7 +670,7 @@ During the skill update phase, we generate expected player skills
 To train a neural network a loss function is required.
 All of the outputs are probability distributions, therefore we can use the probability density function (pdf) of the chosen distribution.
 The higher the pdf, the better the estimate, but loss function is minimised, therefore we need to negate the pdf to define loss.
-For example a loss function for a Gaussian would be:
+For example a loss function for a Gaussian distribution would be:
 \begin{equation}
 \text{loss}(x,\mu,\sigma) = -\frac{1}{\sqrt{2\sigma^2\pi}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
 \label{eq:gaussian-loss}
@@ -679,12 +679,19 @@ where $x$ is the desired value and $\mu$ \& $\sigma$ are estimated parameters.
 
 \paragraph{Optimising loss function}
 The loss function is defined across the whole system, therefore we need to multiply the pdf of all the distributions.
-Multiplication is expensive, to improve performance of the system we can take the log of the product to turn it into a sum:
+Multiplication is problematic due to two problems:
+\begin{itemize}
+\item It is computationally expensive
+\item Multiplying small probabilities can lead to underflow, which will mean that the final probability will be equal to zero.
+\end{itemize}
+To solve these problems the product of probabilities can be turned into a sum by taking a log of the joint probability:
 \begin{equation}
 \text{loss} = \log\left(\prod_{p\subset P}p(x)\right) = \sum_{p\subset P}\log(p(x))
 \end{equation}
-This does not break the system, since all probabilities are positive and log is a monotonically increasing function.
-By taking the log of different parts of pdf itself we can improve the efficiency even more, e.g. Gaussian from equation \ref{eq:gaussian-loss} becomes:
+Since all probabilities are positive log of them is always defined, log is also a monotonically increasing function which means that decreasing log also decreases the function.
+
+Computing the pdf itself also poses a problem, since potentially very small and very large values are multiplied together the pdf itself can underflow or overflow.
+Since the loss equation already contains log, the multiplications in pdf can turned into sums by pushing the log further in, e.g. Gaussian from equation \ref{eq:gaussian-loss} becomes:
 \begin{equation}
 {loss}(x,\mu,\sigma) = \log(2\pi)/2+\log(\sigma)+\frac{(x-\mu)^2}{2\sigma^2}
 \end{equation}
@@ -694,18 +701,12 @@ The optimising function can only change the parameters produced by the neural ne
 \label{eq:gaussian-log-loss}
 \end{equation}
 \paragraph{Restricting the range of the output}
-Some of the parameters have to fall within certain range.
-The most obvious way to achieve this, is to just clip the output values to the required range.
-Unfortunately, by clipping values we restrict the ability of neural networks to learn, because clipping information is not passed to optimisation algorithm.
-Instead we can use some function transforms to map the output values onto the required range.
-To map real numbers onto positive reals (e.g. for standard deviation) we can use an exponential:
-\begin{equation}
-x' = e^x
-\end{equation}
-To map real numbers to values between zero and one (e.g. for probability of winning) we can use a logistic function:
-\begin{equation}
-x' = \frac{1}{1+e^{-x}}
-\end{equation}
+Some of the parameters have to fall within certain range, but the neural output produced by a node in a neural network is usually not bound to any range.
+This can be solved by using an appropriate activation function on the final layer of the neural network.
+\emph{ReLU} is an obvious choice for enforcing positive values, but it is problematic in that the optimisation function may not properly adjust the weights of the NN, I decided to use \emph{Softplus} instead.
+
+Although, sometimes different outputs of the same neural network must have different bounds placed on them.
+Since the activation function is usually defined on the whole layer, it is frequently better to keep activation function of the last layer as \emph{linear} and apply appropriate activation function on each element individually.
 
 \subsection{Skill update model}
 After every match the system updates its belief about the player skills using the previous belief and player performance in the match.
