@@ -79,16 +79,33 @@
 
 \begin{document}
 \frontmatter
-\maketitle
+
+
+\pagestyle{empty}
+
+\rightline{\LARGE \textbf{\theauthor}}
+
+\vspace*{60mm}
+\begin{center}
+\Huge
+\textbf{Predicting statistical results in competitive computer team games} \\[5mm]
+Computer Science Tripos -- Part II \\[5mm]
+\college \\[5mm]
+\today  % today's date
+\end{center}
+
+
+
+\cleardoublepage
+\pagestyle{plain}
 
 \section*{Proforma}
 \begin{description}
 \item[Name] \theauthor
 \item[College] \college
-\item[Title] Predicting arbitrary events in competitive computer team games
-\item[Examination] %TODO
-\item[Year] 2017
-\item[Word Count] \footnote{Calculated using \mintinline{bash}{pdftotext Disseration.tex -f 7 -l 38 - | wc -w} and manually excluding appendices and bibliography} %TODO
+\item[Title] Predicting statistical results in competitive computer team games.
+\item[Examination] Computer Science Tripos -- Part II, June 2017
+\item[Word Count] 9263\footnote{Calculated using \mintinline{bash}{pdftotext Disseration.tex -f 7 -l 38 - | wc -w} and manually excluding appendices and bibliography} %TODO
 \item[Project Originator] Artem Vasenin (av429)
 \item[Project Supervisor] Yingzhen Li (yl494)
 \end{description}
@@ -102,15 +119,10 @@ The mean squared error of such predictions should be less than half of variance 
 A graphical model was created which produces a probability distribution for continuous statistics.
 The first prototype was built using a combination of ad-hoc use of TrueSkill and machine learning functions from scikit-learn python library.
 The final version was created entirely using TensorFlow and Keras.
-The system achieved $R^2$ value of \{\}
-%TODO
-on \{\}
-%TODO
-variables in the dataset.
-%TODO 
+The system achieved $R^2$ value of 0.5 on one variable in the dataset and over 0.25 on another three.
 \subsection*{Special Difficulties}
-Other than the typo in success criteria, there were none.
-%TODO Check whether this has to be amended.
+There was a mistake in the project proposal success criteria, which is explained in subsection \ref{requirements-error}.
+
 
 \section*{Declaration of Originality}
 I, \theauthor\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
@@ -118,6 +130,9 @@ I, \theauthor\ of \college, being a candidate for Part II of the Computer Scienc
 \noindent Signed 
 \\[1\baselineskip]
 \noindent Date: \thedate
+
+\section*{Acknowledgements}
+%TODO
 
 \clearpage
 \tableofcontents
@@ -175,7 +190,7 @@ The projects aimed to produce a system that would be able to predict match stati
 \begin{itemize}
 \item The system must be able to work with data from different games, as long as it is formatted properly.
 \item The predictions should be based on skills of all players in the game, not just the player for which predictions are being made.
-\item The system should be able to maintain a belief state about a player skill through time and make time-sensitive predictions, not the same prediction for all games. %TODO Explain this better
+\item The system should be able to maintain a belief state about a player skill through time and make time-sensitive predictions, not the same prediction for all games.
 \end{itemize}
 \subsection{Non-functional Requirements}
 \begin{itemize}
@@ -305,6 +320,13 @@ The use of an IDE streamlined the process of development and allowed me to focus
 
 
 \chapter{Implementation}
+This chapter discusses design and implementation of the prediction system produced.
+The system was made in two stages: first a prototype was made, tested and analysed.
+Based on the result of the analysis a better system was designed and implemented.
+The main system consists of two models: prediction model and skill update model.
+
+Prediction model is used to make predictions based on the estimated skills of the players and to calculate player performance based on match results.
+Skill update model is used to estimate the skills of the players at a particular time using past performances.
 \section{Installation of required libraries}
 Python has a package index (PyPI) which is used to distribute most available packages.
 The developers of PyPI provide a tool called \emph{pip} which can manage package installation for you, it can be installed on Ubuntu using:
@@ -485,7 +507,7 @@ Since the system can never be sure on the exact skill values for each player, sk
     \node[annot,left of=hl] {Input layer};
     \node[annot,right of=hl] {Output layer};
 \end{tikzpicture}
-\caption{Simple fully connected feedforward neural network with one hidden layer.}
+\caption{An example of fully connected feedforward neural network with one hidden layer.}
 \label{fig:neural-network}
 \end{figure}
 Because, I decided to use neural networks in my system, I had to learn basic theory behind them and how to construct them.
@@ -579,7 +601,7 @@ There are two parts in the system: predicting results from inferred player skill
 An example of a prediction model made for a game in which four players play in two teams can be seen in figure \ref{fig:four-player-model} and a factor graph expansion can be found in Appendix \ref{factor-graph}.
 The skill update model is the same for all games and can be seen in figure \ref{fig:skill-update}.
 
-Training both the variable prediction model and model for player skill updates at the same time would greatly increase the data required for processing. %TODO check this
+Training both the variable prediction model and model for player skill updates at the same time would greatly increase the data required for processing.
 It will also raise some difficult problem such as \emph{vanishing gradient}, unfortunately I did not have enough time to solve them properly.
 Instead I decided to use the technique called \emph{coordinate descent}, to optimise the models alternatively.
 \paragraph{Coordinate descent}
@@ -693,47 +715,47 @@ where $\bs{p}^k$ is the $k$-th sample.
 
 Team skills are also latent variables which have to be estimated from game results.
 Another q-function has to be trained to estimate $P(\bs{t}\mid\bs{x},\bs{y})$.
-The complete graph of player performance inference model is shown in figure \ref{fig:q-model}.
-\begin{figure}[ht]
-\centering
-\begin{tikzpicture}
-	% Team results
-	\node[obs] (y) [] {$\bs{y}$};	
-	
-	% Team performances
-	\node[latent] (t0)[above=2cm of y, xshift=-4cm] {$\boldsymbol{t}_0$};
-	\node[latent] (t1)[above=2cm of y, xshift=4cm] {$\boldsymbol{t}_1$};
-	
-	% Player results
- 	\node[obs] (x0)[below= 2cm of t0, xshift=-1.5cm] {$\boldsymbol{x}_0$};
- 	\node[obs] (x1)[below= 2cm of t0, xshift=1.5cm] {$\boldsymbol{x}_1$};
- 	\node[obs] (x2)[below= 2cm of t1, xshift=-1.5cm] {$\boldsymbol{x}_2$};
- 	\node[obs] (x3)[below= 2cm of t1, xshift=1.5cm] {$\boldsymbol{x}_3$};
- 	
- 	% Player performances
- 	\node[latent] (p0)[above=of t0, xshift=-1.5cm] {$\boldsymbol{p}_0$};
- 	\node[latent] (p1)[above=of t0, xshift=1.5cm] {$\boldsymbol{p}_1$};
- 	\node[latent] (p2)[above=of t1, xshift=-1.5cm] {$\boldsymbol{p}_2$};
- 	\node[latent] (p3)[above=of t1, xshift=1.5cm] {$\boldsymbol{p}_3$};
- 	
- 	%Player to team performance
- 	\edge[] {t0} {p0,p1};
- 	\edge[] {t1} {p2,p3};
- 	
- 	%Player results
- 	\edge[] {x0} {p0,t0,t1};
- 	\edge[] {x1} {p1,t0,t1};
- 	\edge[] {x2} {p2,t1,t0};
- 	\edge[] {x3} {p3,t1,t0};
- 	
- 	%Team performance
- 	\edge[] {y} {t0,t1};
- 	
-	
-\end{tikzpicture}
-\caption{An example of an player performance inference graph.}
-\label{fig:q-model}
-\end{figure}
+%The complete graph of player performance inference model is shown in figure \ref{fig:q-model}.
+%\begin{figure}[ht]
+%\centering
+%\begin{tikzpicture}
+%	% Team results
+%	\node[obs] (y) [] {$\bs{y}$};	
+%	
+%	% Team performances
+%	\node[latent] (t0)[above=2cm of y, xshift=-4cm] {$\boldsymbol{t}_0$};
+%	\node[latent] (t1)[above=2cm of y, xshift=4cm] {$\boldsymbol{t}_1$};
+%	
+%	% Player results
+% 	\node[obs] (x0)[below= 2cm of t0, xshift=-1.5cm] {$\boldsymbol{x}_0$};
+% 	\node[obs] (x1)[below= 2cm of t0, xshift=1.5cm] {$\boldsymbol{x}_1$};
+% 	\node[obs] (x2)[below= 2cm of t1, xshift=-1.5cm] {$\boldsymbol{x}_2$};
+% 	\node[obs] (x3)[below= 2cm of t1, xshift=1.5cm] {$\boldsymbol{x}_3$};
+% 	
+% 	% Player performances
+% 	\node[latent] (p0)[above=of t0, xshift=-1.5cm] {$\boldsymbol{p}_0$};
+% 	\node[latent] (p1)[above=of t0, xshift=1.5cm] {$\boldsymbol{p}_1$};
+% 	\node[latent] (p2)[above=of t1, xshift=-1.5cm] {$\boldsymbol{p}_2$};
+% 	\node[latent] (p3)[above=of t1, xshift=1.5cm] {$\boldsymbol{p}_3$};
+% 	
+% 	%Player to team performance
+% 	\edge[] {t0} {p0,p1};
+% 	\edge[] {t1} {p2,p3};
+% 	
+% 	%Player results
+% 	\edge[] {x0} {p0,t0,t1};
+% 	\edge[] {x1} {p1,t0,t1};
+% 	\edge[] {x2} {p2,t1,t0};
+% 	\edge[] {x3} {p3,t1,t0};
+% 	
+% 	%Team performance
+% 	\edge[] {y} {t0,t1};
+% 	
+%	
+%\end{tikzpicture}
+%\caption{An example of an player performance inference graph.}
+%\label{fig:q-model}
+%\end{figure}
 
 
 \subsection{Skill update model}
@@ -851,8 +873,17 @@ If the system is trained on the whole history of games, it is optimised to predi
 Therefore, to improve the accuracy of the system we can only use recent matches in which players employ current strategies to train the system.
 Although, there is a trade-off: the smaller the time-frame the fewer matches are available for analysis.
 
+\section{Summary}
+In this chapter the structure and design of the main system was introduced and explained.
+To design the main system a graphical model was constructed, then conditional probabilities were estimated using neural networks.
+Using neural networks for conditional probabilities, meant that Bayes' theorem could not be used to make a model for performance estimate, since integrating out a variable produced by a neural network requires integration over all possible weights in a neural network which is infeasible.
+To solve that problem variational methods were used to approximate the reverse conditional probability using sampling.
 
 \chapter{Evaluation}
+This chapter discusses how the final system was evaluated.
+It introduces \emph{train/validation/test} split and how it is used to evaluate a machine learning model.
+In this chapter I also discuss how validation results can be used to optimise the model using \emph{hyper-parameter search}.
+
 \section{Preprocessing}
 When neural networks have been trained, we need process every match in chronological order to update the player skills.
 To make evaluation quicker we can create a dictionary which contains match id as keys and skills of the players taking part in that match.
@@ -912,9 +943,7 @@ Record the result.
 When splitting the dataset into train/validation and test parts it is important to keep in mind the total size of the dataset.
 Making the size of the test part too small can lead to statistically insignificant results and also increase the chance of sampling error.
 On the other hand making the size of training data too small can lead to under-fitting for the model.
-
-These problems usually only apply to small population sizes and since my population size was 14000 matches, I decided to use standard 80:20 train/test split using the Pareto principle.
-%TODO This sounds a bit shit, put more work here
+I decided to use standard 80:20 train/test split using the Pareto principle.
 
 \section{Hyper-parameter selection}
 \begin{figure}[ht]
@@ -1014,13 +1043,14 @@ Therefore, I concluded that currently the system makes predictions almost exclus
 
 This is a biggest failure of the system and would be the first problem that would have to be corrected if the system would be developed further.
 
-\paragraph{Time dependent player skill}
 \begin{figure}[ht]
 \centering
 \includegraphics[scale=0.5]{player_skill}
 \caption{Change in player's skill through time}
 \label{fig:player-skill}
 \end{figure}
+
+\paragraph{Time dependent player skill}
 This requirement was satisfied.
 As can be seen on figure \ref{fig:player-skill}, the magnitude of player's skill varies through time.
 Because, these skills are generated using variational inference, I can not tell what each of them represent, therefore they are unlabelled.
@@ -1032,7 +1062,7 @@ Therefore, I consider this requirement satisfied.
 
 \paragraph{Accuracy and precision of results}
 Prediction of only one variable has achieved $R^2$ values of more than 0.5, therefore while this requirement was partly satisfied, further work has to be done.
-
+I believe that this requirement is closely linked to the system being able to make predictions based on the skills of all players in the match and if that requirement is satisfied the accuracy and precision of predictions will also greatly improve.
 
 \subsection{Quantitative Results}
 \begin{figure}[ht]
@@ -1045,7 +1075,7 @@ $R^2$            & 0.508 & 0.453 & 0.372 & 0.288 & 0.164 & 0.044 & 0.030  & 0.18
 $\sigma$ reduction & 0.299 & 0.260 & 0.208 & 0.156 & 0.086 & 0.022 & 0.015 & 0.097
 \end{tabular}
 \caption{Quantitative results.}
-\note{\emph{GPM} and \emph{XPM} depends mainly on player's playstyle and change little based on other player in the game, therefore they were predicted well.
+\note{\emph{GPM} and \emph{XPM} depends mainly on player's playstyle and changes little based on other player in the game, therefore they were predicted well.
 While variables such as \emph{kills} and \emph{deaths} depend on player's interaction with the opponents, since the system does not properly account for skills of other players, they are predicted less well.}
 \label{tb:results}
 \end{figure}
@@ -1053,13 +1083,18 @@ As was expected, different variables were predicted with different levels of suc
 The results of predicting the eight main variables\footnote{The explanation of what each variables signifies in game can be found at the end of project proposal in appendix \ref{proposal}} can be seen in figure \ref{tb:results}.
 
 Unfortunately, the accuracy requirement has only been achieved on one variable, I believe this is due to the fact that one of the functional requirements was not achieved.
-As the model does not take into account the skills of other players, the accuracy suffers.
+As the model does not properly take into account the skills of other players, the accuracy suffers.
 Furthermore, I believe that such high results were only possible because the teams in most of the matches are fairly matched by the tournament organisers.
 If the teams are not well balanced, the effect of skills of other players will have much more of an effect and produce much larger deviations.
 
+\section{Summary}
+In this chapter I described how the system was optimised and tested.
+The evaluation of the system showed that four out of five requirements have been satisfied and that primary success criteria has been achieved.
+
 \chapter{Conclusions}
 \section{Summary of Achievements}
-
+The project has seen reasonable level of success.
+Four out of five requirements were satisfied.
 \section{Future work and Improvement Ideas}
 During the work on this project I had many ideas about how different things can be done and what methods can be used.
 Unfortunately, I didn't have enough time to try many of them, but I think they should definitely be tested in the future, these include:
@@ -1293,17 +1328,25 @@ In such parts, all but the first set were hidden, indicated by comments.
 \chapter{Complete list of system hyper-parameters}\label{hypeparameter-list}
 \section{Game-specific hyper-parameters}
 The following hyper-parameters have to be adjusted for every game:
-\begin{enumerate}
-\item Size of the vector representing player skills.
-\item Size of the vector representing team skills.
-\end{enumerate}
-%TODO
+\begin{description}
+\item[Size of the vector representing player skills] \hfill \\
+This depends on complexity of the game and amount of variables which the system has to predict.
+Games which require a wide variety of skills would require this vector to be bigger, it will also have to be bigger if number of required variables is large.
+\item[Size of the vector representing team skills] \hfill \\
+This primary depends on the size of the vector representing the player skills as it has to summarise the collective skills of the team.
+It also depends on number and variety of roles that can be fulfilled in the game, if all players do the same thing, this will be smaller, if different players try to complete different objectives or play different roles this would have to be bigger.
+\item[Period of time to consider during training] \hfill \\
+This hyper-parameter depends on how quickly the strategies used by players change.
+If the same strategies are used for long periods of time, then much older matches can be considered then if strategies constantly change.
+\end{description}
+
 \section{General hyper-parameters}
 The following hyper-parameters are related to the system in general:
 \begin{enumerate}
 \item Optimisation algorithm and parameters of chosen algorithm.
 \item Stopping condition for optimisation algorithm.
 \end{enumerate}
+Theses are standard machine learning parameters and adjusting them is a complicated task with many possible approaches.
 
 \chapter{Project Proposal}
 \label{proposal}
