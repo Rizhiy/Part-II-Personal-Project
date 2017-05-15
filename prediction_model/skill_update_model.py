@@ -1,17 +1,15 @@
 import tensorflow as tf
 
 from prediction_model import PLAYER_DIM, GAMES_TO_CONSIDER
-from prediction_model.utils import log_normal, make_mu_and_sigma, make_sql_nn, make_bigger_sql_nn
+from prediction_model.utils import log_normal, make_mu_and_sigma, make_bigger_sql_nn
 
 player_pre_skill = tf.placeholder(tf.float32, shape=(None, PLAYER_DIM * 2))
 player_performance = tf.placeholder(tf.float32, shape=(None, GAMES_TO_CONSIDER, PLAYER_DIM))
 player_next_performance = tf.placeholder(tf.float32, shape=(None, PLAYER_DIM))
-player_next_performance_estimate = tf.placeholder(tf.float32, shape=(None, PLAYER_DIM * 2))
 
 batch_size = tf.shape(player_next_performance)[0]
 epsilon = tf.random_normal((batch_size, PLAYER_DIM))
 
-# Only one network here, since we are only doing forward pass
 nn = make_bigger_sql_nn(GAMES_TO_CONSIDER * PLAYER_DIM + PLAYER_DIM * 2, PLAYER_DIM * 2)
 
 player_performance_split = tf.split(player_performance, GAMES_TO_CONSIDER, axis=1)

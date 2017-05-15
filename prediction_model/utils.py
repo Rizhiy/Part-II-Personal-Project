@@ -11,7 +11,7 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG
 
 
 class Stats(Enum):
@@ -42,8 +42,8 @@ def log_normal(x, mu, sigma):
     return tf.reduce_sum(error, 1)
 
 
-def entropy(sigma):
-    e = min_log(2 * np.pi) / 2 + min_log(sigma) + 1
+def log_entropy(sigma):
+    e = min_log(sigma)
     return tf.reduce_sum(e, 1)
 
 
@@ -300,7 +300,8 @@ def update_player_skills(player_id: int, target_ids: list, skills: list):
 
 def get_skill(player_id: int, match_id: int):
     if player_id not in PLAYER_GAMES:
-        print("Player not found: {}".format(player_id), file=sys.stderr)
+        if DEBUG:
+            print("Player not found: {}".format(player_id), file=sys.stderr)
         return DEFAULT_PLAYER_SKILL
     player_games = PLAYER_GAMES[player_id]
     match_list = player_games["all"]

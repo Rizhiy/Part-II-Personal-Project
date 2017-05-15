@@ -2,8 +2,8 @@ import tensorflow as tf
 
 from prediction_model import PLAYER_DIM, PLAYERS_PER_TEAM, NUM_OF_TEAMS, PLAYER_RESULT_DIM, TEAM_RESULTS_DIM, TEAM_DIM, \
     BATCH_SIZE
-from prediction_model.utils import make_mu_and_sigma, log_normal, log_bernoulli, entropy, \
-    make_k_and_theta, log_gamma, make_bigger_sql_nn, make_sql_nn
+from prediction_model.utils import make_mu_and_sigma, log_normal, log_bernoulli, log_entropy, \
+    make_k_and_theta, log_gamma, make_sql_nn
 
 # Do we really need float32? How much faster will float16 be? Same for ints
 player_skills = tf.placeholder(tf.float32, shape=(BATCH_SIZE, PLAYERS_PER_TEAM * NUM_OF_TEAMS, PLAYER_DIM * 2))
@@ -17,8 +17,7 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     player_epsilons.append(tf.random_normal((BATCH_SIZE, PLAYER_DIM,)))
 
 # Upwards pass
-result_to_team_nn = make_sql_nn(PLAYER_RESULT_DIM * PLAYERS_PER_TEAM * NUM_OF_TEAMS + TEAM_RESULTS_DIM,
-                                       TEAM_DIM * 2)
+result_to_team_nn = make_sql_nn(PLAYER_RESULT_DIM * PLAYERS_PER_TEAM * NUM_OF_TEAMS + TEAM_RESULTS_DIM, TEAM_DIM * 2)
 player_skill_nn = make_sql_nn(PLAYER_RESULT_DIM + TEAM_DIM, PLAYER_DIM * 2)
 
 # Downwards pass
@@ -89,14 +88,14 @@ for i in range(PLAYERS_PER_TEAM * NUM_OF_TEAMS):
     log_result += log_gamma(player_results_split[i], player_to_results_param0[i], player_to_results_param1[i])
     mu, sigma = tf.split(player_skills_split[i], 2, axis=1)
     log_result += log_normal(player_performance[i], mu, sigma)
-    log_result -= entropy(player_performance_sigma[i])
+    log_result += log_entropy(player_performance_sigma[i])
 
 log_result += log_bernoulli(team_results, team_to_result)
 
 log_result += log_normal(team0_performance, player_to_team0_mu, player_to_team0_sigma)
 log_result += log_normal(team1_performance, player_to_team1_mu, player_to_team1_sigma)
 
-log_result -= entropy(team0_performance_sigma)
-log_result -= entropy(team1_performance_sigma)
+log_result += log_entropy(team0_performance_sigma)
+log_result += log_entropy(team1_performance_sigma)
 
 loss = -tf.reduce_mean(log_result)
