@@ -26,7 +26,7 @@ init = tf.global_variables_initializer()
 SESSION.run(init)
 
 create_data_set()
-for i in range(2, 3):
+for i in range(10, 11):
     print("NEW: {}".format(i))
     match_list = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > int(BOSTON_MAJOR_LAST_GAME_ID - i * 1e8)]
 
@@ -110,7 +110,7 @@ for i in range(2, 3):
                 # print("Original std: {}".format(np.std(prediction_result, 0)))
                 accuracy = np.mean(1 - np.var(prediction_error, 0) / np.var(prediction_result, 0))
                 accuracy_set.append(accuracy)
-                if accuracy < max_accuracy and timer > 10:
+                if accuracy < max_accuracy and timer > 3:
                     print(max_accuracy)
                     break
                     pass

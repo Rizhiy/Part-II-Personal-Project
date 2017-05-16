@@ -87,7 +87,6 @@ def make_smaller_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
 
 def make_mu_and_sigma(nn, tensor):
     mu, log_sigma = tf.split(nn(tensor), num_or_size_splits=2, axis=1)
-    # log_sigma = tf.clip_by_value(log_sigma, -5, 5)
     sigma = clip_exp(log_sigma)
     return mu, sigma
 
