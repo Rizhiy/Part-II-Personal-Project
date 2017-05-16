@@ -50,6 +50,16 @@
 \newcommand\bs[1]{\boldsymbol{#1}}
 \newcommand\note[1]{\vspace*{-0.5\baselineskip}\caption*{#1}}
 
+%Links
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=magenta,
+    urlcolor=cyan,
+    pdftitle={Predicting statistical results in competitive computer games},
+}
+
 
 % Display JSON nicely
 \usepackage{xcolor}
@@ -68,7 +78,6 @@
   \colorbox{\minted@bgcol}{\usebox{\minted@bgbox}}%
   \endtrivlist % close the trivlist
  }
-\makeatother
 
 
 
@@ -77,19 +86,19 @@
 \date{\today}
 
 
-
+\makeatletter
 \begin{document}
 \frontmatter
 
 
 \pagestyle{empty}
 
-\rightline{\LARGE \textbf{\theauthor}}
+\rightline{\LARGE \textbf{\@author}}
 
 \vspace*{60mm}
 \begin{center}
 \Huge
-\textbf{Predicting statistical results in competitive computer games} \\[5mm]
+\textbf{\@title} \\[5mm]
 Computer Science Tripos -- Part II \\[5mm]
 \college \\[5mm]
 \today  % today's date
@@ -99,15 +108,14 @@ Computer Science Tripos -- Part II \\[5mm]
 
 \cleardoublepage
 \pagestyle{plain}
-
 \section*{Proforma}
 \begin{description}
-\item[Name] \theauthor
+\item[Name] \@author
 \item[College] \college
 \item[Title] Predicting statistical results in competitive computer games.
 \item[Examination] Computer Science Tripos -- Part II, June 2017
-\item[Word Count] 9336\footnote{Calculated using \mintinline{bash}{pdftotext Disseration.pdf -f 9 -l 42  - | wc -w}.} %TODO
-\item[Project Originator] Artem Vasenin (av429)
+\item[Word Count] 9350\footnote{Calculated using \mintinline{bash}{pdftotext Disseration.pdf -f 9 -l 42  - | wc -w}.} %TODO
+\item[Project Originator] \@author\ (av429)
 \item[Project Supervisor] Yingzhen Li (yl494)
 \end{description}
 
@@ -126,7 +134,7 @@ There was a mistake in the project proposal success criteria, which is explained
 
 
 \section*{Declaration of Originality}
-I, \theauthor\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
+I, \@author\ of \college, being a candidate for Part II of the Computer Science Tripos, hereby declare that this dissertation and the work described in it are my own work, unaided except as may be specified below, and that the dissertation does not contain material that has already been used to any substantial extent for a comparable purpose. % This is one long-ass sentense
 \\[1\baselineskip]
 \noindent Signed 
 \\[1\baselineskip]
@@ -163,9 +171,11 @@ Before starting the project, I have looked into papers and articles about predic
 I have found out that nothing similar has been done before.
 Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianranking}) were made to only predict the outcome of a match , not any related results.
 Outside of academia, other algorithms were made which used machine learning to improve their performance, but again only focusing on the outcome of a match.
-%TODO Write more here
 
+\section{Project Aim}
+The project aims to produce a system that given players' match results will be able to predict the results of a match between two teams of players.
 
+\makeatother
 \chapter{Preparation}
 \section{Proposal Refinement}
 I had two drafts of my project proposal, this being my first major project I had little experience in preparing a plan.
@@ -175,12 +185,13 @@ After receiving comments from my overseers regarding the first draft of the prop
 \item Limited and listed all of the potential variables that will be considered, to keep the project goals concise.
 \item Add criteria to library selection to streamline the process.
 \end{itemize}
-Overall this allowed me to stay on target throughout the project and control "feature creep"\footnote{en.wikipedia.org/wiki/Feature\_creep}.
-\subsection{Workflow}
+Overall this allowed me to stay on target throughout the project and control "feature creep"\footnote{\url{https://en.wikipedia.org/wiki/Feature_creep}}.
+\section{Requirement Analysis}
+\subsection{Type of variables to predict}
 \begin{figure}[ht]
 \centering
 \includegraphics[scale=0.39]{results-summary}
-\caption{An example of a match summary in the game `Dota 2'.}
+\caption{Screenshot of a match summary in the game `Dota 2'.}
 \label{fig:results-summary}
 \end{figure}
 Values included in the match summary can be roughly separated into two types: class based and regression based.
@@ -190,7 +201,7 @@ Therefore, if such variables have to be predicted, a classification method shoul
 
 On the other hand something like players score is a value which increases progressively, therefore nearby values have similar significance.
 In such cases regression techniques would work better.
-\section{Requirement Analysis}
+\subsection{Requirements}
 The projects aimed to produce a system that would be able to predict match summary data from players' history.
 \begin{itemize}
 \item The system must be able to work with data from different games, as long as it is formatted properly.
@@ -201,7 +212,8 @@ The projects aimed to produce a system that would be able to predict match summa
 \end{itemize}
 \label{requirements-error}
 \textbf{Regarding the last point}: in the project proposal my success criteria contained a mistake and had 'standard deviation' instead of 'variance', which made the success criteria almost impossible to achieve.
-As it currently stands the systems deviation is squared, while original deviation is not, which means that achieving this requirement gets more difficult the larger the original deviation is.
+If that interpretation is used the systems deviation is squared, while original deviation is not.
+That means that achieving this requirement gets more difficult the larger the scale of the variable is.
 This also makes a big difference once the variables are normalised, since squaring values less than one decreases it and makes achieving this result easier.
 In my evaluation I will analyse the results as though the success criteria was stated as above.
 \section{Starting Point}
@@ -262,6 +274,13 @@ After I have finished my research, I have decided to try the following machine l
 \item Random Forests (RF)
 \end{itemize}
 \subsection{Over and under fitting}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{overfitting}
+\caption{Overfitting example.}
+\note{In this case the optimisation should be stopped at the fifth iteration, after which training loss keeps decreasing, but validation loss starts increasing.}
+\label{fig:overfitting}
+\end{figure}
 When training an algorithm a decision has to be made when to stop the training, this is difficult decision and is usually made using some kind of heuristic.
 If the training is stopped too early it leads to under-fitting, if it is stopped too late, it leads to over-fitting, in both cases the algorithm performs below optimum.
 \paragraph{Under-fitting}
@@ -270,6 +289,7 @@ It is often easy to detect using a good loss metric.
 The basic solution is to use more complex model or train longer.
 \paragraph{Over-fitting}
 An over-fit algorithm models the training data too well, the algorithm learns the noise in the training data.
+This leads to training loss decreasing, while validation loss remains the same or even starts increasing, an example can be seen in figure \ref{fig:overfitting}.
 Noise is random, therefore it will be different in the real/test data.
 By modelling the noise in the training data, the real world-performance is decreased.
 Over-fitting is a bigger problem, since it is much more difficult to detect, therefore different methods are usually used to prevent it.
@@ -287,6 +307,7 @@ I outlined some of the methods I used in subsection \ref{overfitting}.
 %\end{tikzpicture}
 \includegraphics[scale=0.5]{spiral-model}
 \caption{Agile approach using spiral model.}
+\note{Image from \url{https://en.wikipedia.org/wiki/Spiral_model}.}
 \label{fig:spiral-model}
 \end{figure}
 I have decided to use an agile approach of working on this project, seen in figure \ref{fig:spiral-model}, since I was not sure exactly how the algorithm should work at the start of the project.
@@ -305,28 +326,28 @@ Git was used for version control.
 Frequent commits were made after every self-contained change.
 This allowed me to roll-back to a previous version of the project when a mistake was made.
 It also allowed me to compare and evaluate different versions of a specific component.
-The repository was hosted on GitHub\footnote{github.com} which allowed me to work on the project from multiple machines.
+The repository was hosted on GitHub\footnote{\url{https://github.com}} which allowed me to work on the project from multiple machines.
 \subsection{Backup}
-The code was continuously synchronised to Dropbox\footnote{dropbox.com}.
+The code was continuously synchronised to Dropbox\footnote{\url{https://dropbox.com}}.
 Weekly checkpoints were saved to an external hard drive.
 \section{Tools used}
 \subsection{Programming Language and ML Libraries}
 Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
-I have compared a number of libraries (such as Tensorflow\footnote{tensorflow.org} and Torch\footnote{torch.ch}).
+I have compared a number of libraries (such as Tensorflow\footnote{\url{https://tensorflow.org}} and Torch\footnote{\url{http://torch.ch}}).
 I was primarily interested in how much functionality they provide, their performance and how easy it would be to use them.
 
-I have compared their functionality by completing standard machine learning task, such as creating a neural network to classify images in the MNIST\footnote{yann.lecun.com/exdb/mnist} dataset.
+I have compared their functionality by completing standard machine learning task, such as creating a neural network to classify images in the MNIST\footnote{\url{http://yann.lecun.com/exdb/mnist}} dataset.
 Performance was compared by timing how long it would take to achieve 99\% accuracy, in most cases it came down whether GPU acceleration was supported.
 Since I would have to learn how to use the chosen library in detail, I also paid attention to the amount of support material available.
 I took note of quality of documentation and also compared number of questions and answers on StackOverflow.
 
 In the end I have arrived at the conclusion that they all provided required functionality and were similarly easy to use, but API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a new library, therefore I decided to use TensorFlow, API for which was written in Python, a language I was most comfortable writing code in.
-TensorFlow is a low-level library, in which each layer of neural network has to be constructed explicitly, I did not need that level of customisation, therefore I used Keras\footnote{keras.io} to help me build the neural networks.
+TensorFlow is a low-level library, in which each layer of neural network has to be constructed explicitly, I did not need that level of customisation, therefore I used Keras\footnote{\url{https://keras.io}} to help me build the neural networks.
 
-Additionally Python has a higher level machine learning library called scikit-learn\footnote{scikit-learn.org}.
+Additionally Python has a higher level machine learning library called scikit-learn\footnote{\url{http://scikit-learn.org}}.
 It provides easy way to quickly implement many machine learning methods, this library was used to evaluate prototype evaluation.
-To a lesser extent Python was also chosen since it has a package manager\footnote{pypi.python.org/pypi/pip}, which makes it much easier to install additional packages.
+To a lesser extent Python was also chosen since it has a package manager\footnote{\url{https://pypi.python.org/pypi/pip}}, which makes it much easier to install additional packages.
 
 \subsection{IDE}
 Pycharm was chosen as the integrated development environment (IDE) for the project.
@@ -400,7 +421,7 @@ x' = \frac{x - \min(X)}{\max(X)-\min(X)}
 Frequently the main problem in machine learning is the generation of correct features to represent the data.
 In my case I had summaries of more than twenty thousand matches.
 Most players had a few hundred matches in the dataset.
-Summary for each match is represented as a dictionary of key-value pairs (in JSON\footnote{json.org} format), overall there are more than 200 values per summary, an example of a summary can be found in Appendix \ref{statexample}.
+Summary for each match is represented as a dictionary of key-value pairs (in JSON\footnote{\url{http://json.org}} format), overall there are more than 200 values per summary, an example of a summary can be found in Appendix \ref{statexample}.
 This meant that using raw data for input would be impractical, therefore some kind of aggregation had to be created.
 
 \subsection{Simple mean and variance}
@@ -413,7 +434,7 @@ To improve the features I first tried putting a limit on how many matches were u
 Next thing to try was rating players based on their performance in each variable.
 
 \subsection{Rating of players}
-The easiest algorithm I found for rating players was TrueSkill, since it offered rating games with multiple players and there was a library\footnote{trueskill.org} for python which provided the functionality.
+The easiest algorithm I found for rating players was TrueSkill, since it offered rating games with multiple players and there was a library\footnote{\url{httpz://trueskill.org}} for python which provided the functionality.
 TrueSkill only uses the final ranking of the individual at the end of the match, rather than absolute value, therefore some informations is lost.
 This also meant that I had to do further processing on the data to convert raw values into rankings.
 This was mostly straightforward, one thing to note is that some rankings (such as death count) had to be reversed, since players try to keep those results low rather than make them high.
@@ -529,6 +550,7 @@ Since the system can never be sure on the exact skill values for each player, sk
     \node[annot,right of=hl] {Output layer};
 \end{tikzpicture}
 \caption{An example of fully connected feedforward neural network with one hidden layer.}
+\note{Made using tutorial at \url{http://texample.net/tikz/examples/neural-network}.}
 \label{fig:neural-network}
 \end{figure}
 I decided to use neural networks in my system, therefore I had to learn basic theory behind them and how to construct them.
@@ -931,12 +953,7 @@ Therefore, right at the start the data can be split into two parts: \emph{train/
 \emph{Test} set will be used for evaluation of the algorithm.
 
 \subsection{Preventing Over-fitting}
-
 \label{overfitting}
-Deciding on the length of training period is a difficult tasks.
-If the training period is not long enough the algorithm will be under-fit.
-Similarly, if the training period is too long, the algorithm might over-fit, as can be seen on figure \ref{fig:overfitting}.
-Even if measures are taken to prevent over-fitting time will still be wasted.
 There are several methods to prevent over-fitting:
 \begin{description}
 \item[Using simple models]
@@ -958,14 +975,6 @@ When the validation error stops decreasing the training is stopped.
 \end{description}
 I decided to use validation since it does not suffer from potential of under-fitting and also has added benefit of allowing selection of hyper-parameters.
 The best hyper-parameter combination can be found by first training the system using each combination and validating it, and then comparing the results of each validation.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[scale=0.5]{overfitting}
-\caption{Overfitting example.}
-\note{In this case the optimisation should be stopped at the fifth iteration, after which training loss keeps decreasing, but validation loss starts increasing.}
-\label{fig:overfitting}
-\end{figure}
 
 \subsection{Cross-validation}
 If only one part of training data is used for validation, it might not properly represent the performance of the algorithm.
@@ -1040,7 +1049,7 @@ Similarly to prediction model, different configurations are trained and validate
 The chosen neural network is then used to update the skills of each player at time $t$.
 
 Similarly to neural network in prediction model, neural network without hidden layers worked quite well.
-Although in this model, sufficient improvements have been seen in using up to two hidden layers.
+Although in this model, sufficient improvements have been seen in using up to threeZ hidden layers.
 
 \subsection{Overall system evaluation}
 To evaluate the system overall co-ordinate descent is performed where prediction model and skill update model are optimised alternatively.
