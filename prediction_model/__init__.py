@@ -26,11 +26,11 @@ BATCH_SIZE = 128
 PLAYER_RESULT_DIM = 8
 TEAM_RESULTS_DIM = 2
 
-GAMES_TO_CONSIDER = 4
-PLAYER_DIM = 8
-TEAM_DIM = 4
+GAMES_TO_CONSIDER = 1
+PLAYER_DIM = 4
+TEAM_DIM = 8
 
-DEBUG = False
+DEBUG = 0
 
 RETRAIN = True
 
@@ -51,6 +51,7 @@ for match_id in MATCH_LIST:
     MATCHES[match_id] = json.load(open('../all_matches/' + str(match_id) + '.json', 'r'))
 
 PLAYER_SKILLS = {}
+PLAYER_SKILLS_MU = {}
 PLAYER_PERFORMANCES = {}
 
 PP = pprint.PrettyPrinter(indent=2)

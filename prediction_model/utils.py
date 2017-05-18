@@ -11,7 +11,7 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG, PLAYER_SKILLS_MU
 
 
 class Stats(Enum):
@@ -69,7 +69,9 @@ def make_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
 
 def make_bigger_sql_nn(in_dim: int, out_dim: int, dropout: bool = False):
     p = keras.models.Sequential()
-    p.add(Dense(units=int((in_dim + out_dim)), input_dim=in_dim, activation='relu', kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim) * 2), input_dim=in_dim, activation='relu',
+                kernel_initializer='random_normal'))
+    p.add(Dense(units=int((in_dim + out_dim)), activation='relu', kernel_initializer='random_normal'))
     p.add(Dense(units=int((in_dim + out_dim) / 2), activation='relu', kernel_initializer='random_normal'))
     p.add(Dense(units=out_dim, activation='linear', kernel_initializer='random_normal'))
     if dropout:
@@ -150,9 +152,12 @@ def get_match_arrays(match_id):
             dire_ids.append(player_stat["account_id"])
     if match_id not in PLAYER_SKILLS:
         skills = []
+        skills_mu = []
         for _ in range(10):
             skills.append(DEFAULT_PLAYER_SKILL)
+            skills_mu.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
         PLAYER_SKILLS[match_id] = skills
+        PLAYER_SKILLS_MU[match_id] = skills_mu
     if "radiant_win" not in match_stats["match_data"]:
         match_stats["match_data"]["radiant_win"] = True
     if match_stats["match_data"]["radiant_win"]:
@@ -290,18 +295,24 @@ def get_skill_batch(player_id):
     return batch
 
 
-def update_player_skills(player_id: int, target_ids: list, skills: list):
+def update_player_skills(player_id: int, target_ids: list, skills: list, skills_mu: list):
     for idx, match_id in enumerate(target_ids):
         slot = PLAYER_GAMES[player_id][match_id]["slot"]
         PLAYER_SKILLS[match_id][slot] = skills[idx]
         PLAYER_SKILLS[match_id] = np.array(PLAYER_SKILLS[match_id])
+        PLAYER_SKILLS_MU[match_id][slot] = skills_mu[idx]
+        PLAYER_SKILLS_MU[match_id] = np.array(PLAYER_SKILLS_MU[match_id])
 
 
-def get_skill(player_id: int, match_id: int):
+def get_skill(player_id: int, match_id: int, average: bool = False):
     if player_id not in PLAYER_GAMES:
-        if DEBUG:
+        if DEBUG > 0:
             print("Player not found: {}".format(player_id), file=sys.stderr)
-        return DEFAULT_PLAYER_SKILL
+        if average:
+            skill = DEFAULT_PLAYER_SKILL[int(len(DEFAULT_PLAYER_SKILL) / 2):]
+        else:
+            skill = DEFAULT_PLAYER_SKILL
+        return skill
     player_games = PLAYER_GAMES[player_id]
     match_list = player_games["all"]
     match_list.sort()
@@ -310,7 +321,11 @@ def get_skill(player_id: int, match_id: int):
         idx = -1
     target_id = match_list[idx]
     slot = player_games[target_id]["slot"]
-    return PLAYER_SKILLS[target_id][slot]
+    if average:
+        skill = PLAYER_SKILLS_MU[target_id][slot]
+    else:
+        skill = PLAYER_SKILLS[target_id][slot]
+    return skill
 
 
 def create_player_games(match_list: list):
@@ -349,8 +364,33 @@ def split_list(match_list: list, ratio=0.8):
     return train, test
 
 
+def create_validation_sets(match_list: list, fold: int = 10):
+    random.shuffle(match_list)
+    n = int(len(match_list) / fold)
+    result = [match_list[i:i + n] for i in range(0, len(match_list), n)]
+    if len(result) > fold:
+        result[-2] = result[-2] + result[-1]
+        del result[-1]
+    return result
+
+
 def split_into_chucks(match_list: list, num_of_chunks=5):
     match_list = copy.deepcopy(match_list)
     random.shuffle(match_list)
     size_of_chuck = int(len(match_list) / num_of_chunks)
     return [match_list[i:i + size_of_chuck] for i in range(0, len(match_list), size_of_chuck)]
+
+
+def reset_stats():
+    for player_id in PLAYER_GAMES:
+        PLAYER_GAMES[player_id] = {}
+        PLAYER_GAMES[player_id]["all"] = []
+    match_ids = PLAYER_SKILLS.keys()
+    for match_id in match_ids:
+        skills = []
+        skills_mu = []
+        for _ in range(10):
+            skills.append(DEFAULT_PLAYER_SKILL)
+            skills_mu.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
+        PLAYER_SKILLS[match_id] = skills
+        PLAYER_SKILLS_MU[match_id] = skills_mu

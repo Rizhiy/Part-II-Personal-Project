@@ -1,21 +1,24 @@
 import pickle
 import random
 import sys
+from copy import deepcopy
 
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from keras.layers.core import K
 
 from prediction_model import SESSION, MATCH_LIST, BATCH_SIZE, PLAYERS_PER_TEAM, NUM_OF_TEAMS, RETRAIN, PLAYER_GAMES, \
-    BOSTON_MAJOR_LAST_GAME_ID, TI_6_LAST_GAME_ID
+    BOSTON_MAJOR_LAST_GAME_ID, TI_6_LAST_GAME_ID, DEBUG, PLAYER_PERFORMANCES, PLAYER_SKILLS
 from prediction_model.match_processing_model import player_results_split, player_to_results_param0, \
     player_to_results_param1, \
     loss as inference_loss, player_performance as match_performances, player_skills, player_results, \
     team_results, player_to_team_nn, player_result_nn, team_result_nn, player_performance_estimate
 from prediction_model.skill_update_model import loss as update_loss, player_pre_skill, player_performance, \
-    player_next_performance, post_skill
+    player_next_performance, post_skill, player_post_skill
 from prediction_model.utils import create_data_set, get_new_batch, store_player_performances, get_skill_batch, \
-    update_player_skills, create_player_games, get_test_batch, split_list, make_mu_and_sigma, make_k_and_theta
+    update_player_skills, create_player_games, get_test_batch, split_list, make_mu_and_sigma, make_k_and_theta, \
+    create_validation_sets, reset_stats
 
 test_result = player_results_split[0]
 test2_result = player_to_results_param0[0] * player_to_results_param1[0]
@@ -23,41 +26,44 @@ test2_result = player_to_results_param0[0] * player_to_results_param1[0]
 inference_train_step = tf.train.AdamOptimizer().minimize(inference_loss)
 update_train_step = tf.train.AdamOptimizer().minimize(update_loss)
 init = tf.global_variables_initializer()
-SESSION.run(init)
 
 create_data_set()
-for i in range(10, 11):
-    print("NEW: {}".format(i))
-    match_list = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > int(BOSTON_MAJOR_LAST_GAME_ID - i * 1e8)]
 
-    train_list, test_list = split_list(match_list, 0.8)
-    if TI_6_LAST_GAME_ID in test_list:
-        test_list.remove(TI_6_LAST_GAME_ID)
-        train_list.append(TI_6_LAST_GAME_ID)
+match_list = [x for x in MATCH_LIST if BOSTON_MAJOR_LAST_GAME_ID > x > int(BOSTON_MAJOR_LAST_GAME_ID - 4 * 1e8)]
 
-    num_train_batches = int(len(train_list) / BATCH_SIZE)
+validation_list, t_list = split_list(match_list, 0.9)
+if TI_6_LAST_GAME_ID in t_list:
+    t_list.remove(TI_6_LAST_GAME_ID)
+    validation_list.append(TI_6_LAST_GAME_ID)
+cross_validation_set = create_validation_sets(validation_list)
 
-    create_player_games(train_list)
 
-    pass_num = 0
-    result = 0
-    alpha = .9
-    phase = 30
-    counter = 0
-    min_update_loss = np.infty
-    stopping_counter = 0
-    timer = 0
 
-    max_accuracy = 0
+file_name = "predictions.pkl"
 
-    file_name = "predictions.pkl"
 
-    accuracy_set = []
+if RETRAIN:
+    for idx, test_list in enumerate(cross_validation_set):
+        SESSION.run(init)  # Reset model
+        train_set = deepcopy(cross_validation_set)
+        del train_set[idx]
+        train_list = [item for sublist in train_set for item in sublist]
+        num_train_batches = int(len(train_list) / BATCH_SIZE)
+        reset_stats()  # Reset player skills
+        create_player_games(train_list)
 
-    if RETRAIN:
+        pass_num = 0
+        result = 0
+        alpha = .9
+        phase = 30
+        counter = 0
+        min_update_loss = np.infty
+        stopping_counter = 0
+        stopping_counter2 = 0
+        timer = 0
+        max_accuracy = 0
         while True:
-            if timer > 20:
-                print(np.array(accuracy_set))
+            if timer > 100:
                 break
             if stopping_counter > 4:
                 K.set_learning_phase(False)
@@ -104,18 +110,18 @@ for i in range(10, 11):
                 pickle.dump(data, open(file_name, "wb"))
                 prediction_error = data["error"]
                 prediction_result = data["result"]
-                # print()
                 print("Round: {}".format(timer))
-                # print("Error std:    {}".format(np.std(prediction_error, 0)))
-                # print("Original std: {}".format(np.std(prediction_result, 0)))
+                if DEBUG > 1:
+                    print("Error std:    {}".format(np.std(prediction_error, 0)))
+                    print("Original std: {}".format(np.std(prediction_result, 0)))
                 accuracy = np.mean(1 - np.var(prediction_error, 0) / np.var(prediction_result, 0))
-                accuracy_set.append(accuracy)
-                if accuracy < max_accuracy and timer > 3:
-                    print(max_accuracy)
-                    break
-                    pass
+                if accuracy < max_accuracy:
+                    stopping_counter2 += 1
                 else:
+                    stopping_counter2 = 0
                     max_accuracy = accuracy
+                if stopping_counter2 > 1 and timer > 2:
+                    break
                 print(accuracy)
                 result = 0
                 timer += 1
@@ -133,15 +139,17 @@ for i in range(10, 11):
                 result = (result * alpha + loss_step) / (1 + alpha)
                 store_player_performances(batch["match_ids"], np.swapaxes(player_performances, 0, 1))
                 if batch["switch"]:
+                    print(timer)
                     random.shuffle(train_list)
                     phase -= 1
                     pass_num += 1
-                    # print("Pass {}".format(pass_num))
-                    # print("Inference loss:\t\t{:4d}".format(int(result)))
-                    # print("Actual:      {}".format(test[0]))
-                    # print("Inferred:    {}".format(test2[0]))
-                    # print("Performance: {}".format(player_performances[0][0]))
-                    # print("Prior:       {}".format(batch["player_skills"][0][0]))
+                    if DEBUG > 2:
+                        print("Pass {}".format(pass_num))
+                        print("Inference loss:\t\t{:4d}".format(int(result)))
+                        print("Actual:      {}".format(test[0]))
+                        print("Inferred:    {}".format(test2[0]))
+                        print("Performance: {}".format(player_performances[0][0]))
+                        print("Prior:       {}".format(batch["player_skills"][0][0]))
                     result = 0
                 counter += 1
             else:
@@ -152,52 +160,57 @@ for i in range(10, 11):
                     batch = get_skill_batch(player_id)
                     if len(batch["player_next_performance"]) == 0:
                         continue
-                    _, loss_step, player_skills_new = SESSION.run((
-                        update_train_step, update_loss, post_skill),
+                    _, loss_step, player_skills_new, skills_mu = SESSION.run((
+                        update_train_step, update_loss, post_skill, player_post_skill),
                         feed_dict={player_pre_skill: batch["player_pre_skill"],
                                    player_performance: batch["player_performance"],
                                    player_next_performance: batch["player_next_performance"]})
                     player_loss.append(loss_step)
-                    update_player_skills(player_id, batch["target_game"], player_skills_new)
+                    update_player_skills(player_id, batch["target_game"], player_skills_new, skills_mu)
                 result = int(np.mean(player_loss))
                 if result < min_update_loss:
                     stopping_counter = 0
                     min_update_loss = result
                 else:
                     stopping_counter += 1
-                    # print("Skill update loss:\t{:4d}".format(int(result)))
+                if DEBUG > 2:
+                    print("Skill update loss:\t{:4d}".format(int(result)))
             if np.math.isnan(loss_step):
                 print("Nan loss", file=sys.stderr)
                 break
-    else:
-        data = pickle.load(open(file_name, "rb"))
-    K.set_learning_phase(False)
+else:
+    data = pickle.load(open(file_name, "rb"))
+K.set_learning_phase(False)
 
-# print(PLAYER_SKILLS[TI_6_LAST_GAME_ID])
-# print(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
-# plt.figure(figsize=(12, 7.5))
+if DEBUG:
+    print(PLAYER_SKILLS[TI_6_LAST_GAME_ID])
+    print(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
+plt.figure(figsize=(12, 7.5))
 # predicted = np.swapaxes(data["predicted"], 0, 1)
 # error = np.swapaxes(data["error"], 0, 1)
 # result = np.swapaxes(data["result"], 0, 1)
 # stat = 1
 # density_hist(predicted[stat])
 # density_hist(result[stat])
-# plt.legend()
+# # plt.legend()
+# plt.figure()
 # density_hist(error[stat])
 # plt.show()
 
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.rc('font', size=16)
+
 # skills = []
 # for match_id in PLAYER_GAMES[FEAR_ID]["all"]:
-#     skills.append(get_skill(FEAR_ID, match_id))
+#     skills.append(get_skill(FEAR_ID, match_id, True))
 # skills = np.array(skills)
-# skill0 = skills[:, 1]
-# skill1 = skills[:, 3]
 #
-# l = len(skill0)
+# l = len(skills[:, 0])
 # xnew = np.linspace(0, l, 128)
 #
-# plt.plot(xnew[:-2], spline(range(l), skill0, xnew)[:-2])
-# plt.plot(xnew[:-2], spline(range(l), skill1, xnew)[:-2])
+# for i in range(PLAYER_DIM):
+#     plt.plot(xnew, spline(range(l), skills[:, i], xnew))
 # plt.tick_params(axis='both', which='both', bottom='off', top='off', labelbottom='off', right='off', left='off',
 #                 labelleft='off')
 # plt.xlabel("Time")
@@ -207,9 +220,7 @@ for i in range(10, 11):
 error = data["error"]
 result = data["result"]
 print()
-print(np.mean(np.std(error, 0)[:4] / np.std(result, 0)[:4]))
-print("Error std:                 {}".format(np.std(error, 0)))
-print("Original std:              {}".format(np.std(result, 0)))
-print("Standard error reduction:  {}".format([1] * 8 - np.std(error, 0) / np.std(result, 0)))
-print("Mean absolute error:       {}".format(np.mean(np.absolute(error), 0)))
-print("R^2:                       {}".format([1] * 8 - np.var(error, 0) / np.var(result, 0)))
+print()
+print("Error variance:    {}".format(repr(np.var(error, 0))))
+print("Original variance: {}".format(repr(np.var(result, 0))))
+print("R^2:               {}".format(repr([1] * 8 - np.var(error, 0) / np.var(result, 0))))
