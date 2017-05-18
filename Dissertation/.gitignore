@@ -14,3 +14,4 @@
 *.ind
 *.pygtex
 _minted*
+*.out
