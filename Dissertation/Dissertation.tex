@@ -114,7 +114,7 @@ Computer Science Tripos -- Part II \\[5mm]
 \item[College] \college
 \item[Title] Predicting statistical results in competitive computer games.
 \item[Examination] Computer Science Tripos -- Part II, June 2017
-\item[Word Count] 9706\footnote{Calculated using \mintinline{bash}{pdftotext Dissertation.pdf -f 9 -l 42  - | wc -w}.} %TODO
+\item[Word Count] 9944\footnote{Calculated using \mintinline{bash}{pdftotext Dissertation.pdf -f 9 -l 42  - | wc -w}.} %TODO
 \item[Project Originator] \@author\ (av429)
 \item[Project Supervisor] Yingzhen Li (yl494)
 \end{description}
@@ -168,8 +168,11 @@ Unfortunately, I do not have such knowledge of most games and obtaining such kno
 Furthermore, most such games change their rules every few months to keep players interested, therefore performance of hard coded system would decrease as the time goes on.
 As a result I decided to use machine learning techniques which would help me create a system which can adapt to different games by itself and also update its judgement as game changes.
 
+Once the system is created, perhaps a re-evaluation of how players should be matched can be made.
+I think it is quite likely that players would consider an engaging game more important that winning.
+If that is indeed the case, the system could be used to match players such that the quality of game-play is maximised rather than equality of skill.
 \section{Related Work}
-This project draws heavily from various ranking algorithms that already exist, most of them are based on Elo system \cite{elo}.
+This project draws heavily from various ranking algorithms that already exist, most of them are based on the \emph{Elo system} \cite{elo}.
 Before starting the project, I have looked into papers and articles about predicting events in sports and computer games.
 I have found out that nothing similar has been done before.
 Most closely related algorithms (such as \cite{trueskill} and \cite{bayesianranking}) were made to only predict the outcome of a match, not any related results.
@@ -189,9 +192,9 @@ The mean squared error of produced predictions should be less than one half of v
 I had two drafts of my project proposal, this being my first major project I had little experience in preparing a plan.
 After receiving comments from my overseers regarding the first draft of the proposal, I have incorporated several changes in the project proposal, including:
 \begin{itemize}
-\item Add a time-line, deadlines and deliverables to the project plan, to be able to track the progress of the project accurately.
-\item Limited and listed all of the potential variables that will be considered, to keep the project goals concise.
-\item Add criteria to library selection to streamline the process.
+\item Adding a time-line, deadlines and deliverables to the project plan, to be able to track the progress of the project accurately.
+\item Limiting and listing all of the potential variables that will be considered, to keep the project goals concise.
+\item Adding criteria to library selection to streamline the process.
 \end{itemize}
 Overall this allowed me to stay on target throughout the project and control "feature creep"\footnote{\url{https://en.wikipedia.org/wiki/Feature_creep}}.
 \section{Requirement Analysis}
@@ -216,7 +219,7 @@ The projects aimed to produce a system that would be able to predict match summa
 \item The predictions should be based on skills of all players in the match, not just the player for which predictions are being made.
 \item The system should be able to maintain a belief state about a player skill through time and make time-sensitive predictions, not the same prediction for all matches.
 \item The system should be able to make predictions in under a minute after being trained, on my machine\footnote{Specifications of machine's hardware are given in the project proposal}.
-\item The mean squared error of system's predictions should be less than one half of player's variance for that variable.
+\item The mean squared error of system's predictions should be less than one half of variance for that variable.
 \end{itemize}
 \label{requirements-error}
 \textbf{Regarding the last point}: in the project proposal my success criteria contained a mistake and had 'standard deviation' instead of 'variance', which made the success criteria almost impossible to achieve.
@@ -224,13 +227,14 @@ If that interpretation is used the systems deviation is squared, while original 
 That means that achieving this requirement gets more difficult the larger the scale of the variable is.
 This also makes a big difference once the variables are normalised, since squaring values less than one decreases it and makes achieving this result easier.
 In my evaluation I will analyse the results as though the success criteria was stated as above.
+
 \section{Starting Point}
 \noindent
 At the beginning of the project I had:
 \begin{itemize}
 \item Basic knowledge of artificial intelligence from \emph{Artificial Intelligence I} Part IB course.
-\item Programming experience in Python (acquired by working on personal projects) and Java (acquired by completing courses in first two years of the tripos).
-\item Knowledge of probability rules and Bayes' theorem from A-Level maths and math courses in the first two years.
+\item Programming experience in Python (acquired by working on personal projects) and Java (acquired by completing courses in the first two years of the tripos).
+\item Knowledge of probability rules from A-Level maths and math courses in the first two years.
 \end{itemize}
 During the course of the project I had to gain following qualities:
 \begin{itemize}
@@ -243,17 +247,17 @@ During the course of the project I had to gain following qualities:
 \subsection{Probability background}
 There are a few probability rules, which are used in this model.
 \paragraph{Sum rule}
-Sum/Integral rule allows us to remove unneeded variables from our probability estimates:
+Sum/Integral rule allows us to remove unneeded variables from probability estimates:
 \begin{equation*}
 P(A) = \int\limits_{B}P(A,B)\ dB = \sum\limits_{B}P(A,B)
 \end{equation*}
 \paragraph{Product/Chain rule}
-Product rule allows us to calculate joint probabilities only using conditional probabilities and priors:
+Product rule allows calculation of joint probabilities using only conditional probabilities and priors:
 \begin{equation*}
 P(A,B) = P(A\mid B)P(B)
 \end{equation*} 
 \paragraph{Bayes' rule}
-I will be using Bayesian networks and inference in my system, which is based on Bayes' theorem:
+I will be using Bayesian networks and inference in my system, which are based on Bayes' theorem:
 \begin{equation*}
 P(A\mid B) = \frac{P(B\mid A)P(A)}{P(B)}
 \end{equation*}
@@ -262,24 +266,22 @@ P(A\mid B) = \frac{P(B\mid A)P(A)}{P(B)}
 \item $\boldsymbol{P(A)}$ is the marginal probability of observing $A$, called \emph{prior} of $A$.
 \item $\boldsymbol{P(A \mid B)}$ is the probability of observing $A$ given $B$, called \emph{posterior} of $A$.
 \item $\boldsymbol{P(B \mid A)}$ is the conditional probability of $B$ given $A$, called \emph{likelihood} of $A$.
+\item $\bs{P(B)}$ is the marginal probability of observing $B$.
 \end{itemize}
 \subsection{Machine Learning}
 Machine learning allows computers to make predictions on data by learning from past examples and without being explicitly programmed.
 The aim of my project was to create an algorithm which could work with any game, therefore machine learning was the perfect set of techniques to apply.
 
 Since I decided to use machine learning in my project I had to get some background in the area.
-Unfortunately, computer science course is in Lent term, which is too late, therefore I attended a similar course in Engineering department in Michaelmas term, before beginning the work on the theory.
+Unfortunately, machine learning course in the Computer Lab is in the Lent term, which is too late, therefore I attended a similar course in the Engineering department in the Michaelmas term, before beginning the work on the theory.
 
 After I have finished my research, I have decided to try the following machine learning techniques in my projeject:
 \begin{itemize}
-\item Naive bayes (NB)
+\item Naive Bayes' (NB)
 \item Linear Regression (LinReg)
 \item Logistic Regression (LogReg)
-\item Polynomial Regression (PolReg)
 \item Ridge Regression (RidReg)
 \item Neural Networks (NN)
-\item Support Vector Machines (SVM)
-\item Gaussian Processes (GP)
 \item Random Forests (RF)
 \end{itemize}
 \subsection{Over and under fitting}
@@ -290,7 +292,7 @@ After I have finished my research, I have decided to try the following machine l
 \note{In this case the optimisation should be stopped at the fifth iteration, after which training loss keeps decreasing, but validation loss starts increasing.}
 \label{fig:overfitting}
 \end{figure}
-When training an algorithm a decision has to be made when to stop the training, this is difficult decision and is usually made using some kind of heuristic.
+When training an algorithm a decision has to be made when to stop the training, this is difficult decision and is usually made using some kind of a heuristic.
 If the training is stopped too early it leads to under-fitting, if it is stopped too late, it leads to over-fitting, in both cases the algorithm performs below optimum.
 \paragraph{Under-fitting}
 An under-fit algorithm cannot model the training data well and is not suitable.
@@ -319,7 +321,7 @@ I outlined some of the methods I used in subsection \ref{overfitting}.
 \note{Image from \url{https://en.wikipedia.org/wiki/Spiral_model}.}
 \label{fig:spiral-model}
 \end{figure}
-I have decided to use an agile approach of working on this project, seen in figure \ref{fig:spiral-model}, since I was not sure exactly how the algorithm should work at the start of the project.
+I have decided to use an agile approach while working on this project, seen in figure \ref{fig:spiral-model}, since I was not sure exactly how the algorithm should work at the start of the project.
 The project would be done in two phases:
 \begin{enumerate}
 \item Primary research would be done during the second half of Michaelmas term.
@@ -341,21 +343,22 @@ The code was continuously synchronised to Dropbox\footnote{\url{https://dropbox.
 Weekly checkpoints were saved to an external hard drive.
 \section{Tools used}
 \subsection{Programming Language and ML Libraries}
-Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I don't have to write them myself.
+Machine learning is one of the key elements of this project, therefore I needed a library that would implement key techniques used in ML for me, so that I do not have to write them myself.
 I have compared a number of libraries (such as Tensorflow\footnote{\url{https://tensorflow.org}} and Torch\footnote{\url{http://torch.ch}}).
 I was primarily interested in how much functionality they provide, their performance and how easy it would be to use them.
 
 I have compared their functionality by completing standard machine learning task, such as creating a neural network to classify images in the MNIST\footnote{\url{http://yann.lecun.com/exdb/mnist}} dataset.
 Performance was compared by timing how long it would take to achieve 99\% accuracy, in most cases it came down whether GPU acceleration was supported.
 Since I would have to learn how to use the chosen library in detail, I also paid attention to the amount of support material available.
-I took note of quality of documentation and also compared number of questions and answers on StackOverflow.
+I took note of quality of documentation and also compared number of questions and answers on StackOverflow\footnote{\url{https://stackoverflow.com}}.
 
 In the end I have arrived at the conclusion that they all provided required functionality and were similarly easy to use, but API for most of them were written in different languages.
 I did not want to learn a new language in addition to learning a new library, therefore I decided to use TensorFlow, API for which was written in Python, a language I was most comfortable writing code in.
-TensorFlow is a low-level library, in which each layer of neural network has to be constructed explicitly, I did not need that level of customisation, therefore I used Keras\footnote{\url{https://keras.io}} to help me build the neural networks.
+TensorFlow is a low-level library, in which each layer of neural network has to be constructed explicitly.
+I did not need that level of customisation, therefore I used Keras\footnote{\url{https://keras.io}} to help me build the neural networks.
 
 Additionally Python has a higher level machine learning library called scikit-learn\footnote{\url{http://scikit-learn.org}}.
-It provides easy way to quickly implement many machine learning methods, this library was used to evaluate prototype evaluation.
+It provides easy way to quickly implement many machine learning methods, this library was used to evaluate the prototype.
 To a lesser extent Python was also chosen since it has a package manager\footnote{\url{https://pypi.python.org/pypi/pip}}, which makes it much easier to install additional packages.
 
 \subsection{IDE}
@@ -368,7 +371,7 @@ The use of an IDE streamlined the process of development and allowed me to focus
 This chapter discusses design and implementation of the prediction system produced.
 The system was made in two stages: first a prototype was made, tested and analysed.
 Based on the result of the analysis a better system was designed and implemented.
-The main system consists of two models: prediction model and skill update model.
+The main system consists of two parts: prediction model and skill update model.
 
 Prediction model is used to make predictions based on the estimated skills of the players and to calculate player performance based on match results.
 Skill update model is used to estimate the skills of the players at a particular time using past performances.
@@ -391,7 +394,7 @@ I decided to use a game called "Dota 2" for several reasons:
 \item Summary of each professional match is publicly available and easily accessible through the provided API.
 \item "Dota 2" is one of the leading E-Sports with hundreds of professional matches each year, which provided me with plenty of data points.
 \item The game requires a lot of skill with very little amount of luck involved, which makes it very suitable to prediction.
-\item The game is team-based and requires a lot of co-operation, which makes it more difficult to predict using classical rating algorithms.
+\item The game is team-based and requires a lot of co-operation between players accomplishing different tasks, which makes it more difficult to predict using classical rating algorithms.
 \end{itemize}
 \begin{figure}
 
@@ -415,7 +418,7 @@ To simplify the learning for the algorithm I decided to clip all the value for e
 Some of the variables in the summary occur over much bigger scales than others.
 Most machine learning algorithms would not train properly and would prioritise predicting large variables more accurately than smaller ones.
 I would like to consider all variables with equal priority, therefore I had to standardise the data.
-To standardise data a simple transformation should be applied to all data points:
+To standardise data, a simple transformation should be applied to all data points:
 \begin{equation*}
 x' = \frac{x - \mean{x}}{\sigma}
 \end{equation*}
@@ -423,7 +426,7 @@ Where $\mean{x}$ is the mean of $X$ and $\sigma$ is its standard deviation
 \paragraph{Normalisation}
 During the analysis of data, outlined in subsection \ref{distribution-selection}, I decided that the data is better modelled using a gamma distribution.
 Gamma distribution can only represent positive numbers, therefore I could not use standardisation for this dataset.
-Instead I used normalisation which also rescales the values, but keeps them all positive, it uses the following transformation:
+Instead I used normalisation which also rescales the values, but makes them all positive, it uses the following transformation:
 \begin{equation*}
 x' = \frac{x - \min(X)}{\max(X)-\min(X)}
 \end{equation*}
@@ -445,7 +448,7 @@ This meant that using raw data for input would be impractical, therefore some ki
 
 At first I tried using means and standard deviations of players results as features.
 While this approach made predictions which were better than just predicting variable mean, they were not good enough.
-A variety of machine learning techniques were tried, including: Neural Networks (NN), Ridge Regression (RR) and Naive Bayes (NB), Random Forests (RF).
+A variety of machine learning techniques were tried, including: Neural Networks, Ridge Regression and Naive Bayes'.
 I have tried NN and RF in both classification and regression configuration, some of the results are shown on figure \ref{fig:simple-results}.
 All of the methods had similar performance, which indicated that features generated were not sufficient.
 To improve the features I first tried putting a limit on how many matches were used to calculate player's mean and average, while this improved performance a bit, it remained quite low.
@@ -483,13 +486,12 @@ In the end I decided to use neural networks as my main technique for the followi
 \end{figure}
 During analysis of predictions produced by the prototype, I observed that the range of predictions was much smaller than the actual range for most variables.
 An example of this can be seen on figure \ref{fig:variablerange}, where predictions roughly range from 5 to 15, while actual variable range is roughly 0 to 30.
-In addition, most of the machine learning techniques had similar predictive performance.
-These two facts combined led me to believe that the problem was with quality of features.
+This combined with results of different machine learning techniques, led me to believe that the problem was with quality of features.
 
 \subsection{Required refactoring and redesign}
 To create better features I decided to modify the structure of the TrueSkill graphical model to remove the wrong assumptions.
-This required adding dependency links between player ranks and their teams.
-Additionally, I decided to use machine learning techniques throughout to calculate player ranks, rather than using hard-coded rules, since I do not know which variables are important.
+This required adding dependency links between player skills and their results.
+Additionally, I decided to use machine learning techniques throughout to calculate player skills, rather than using hard-coded rules, since I do not know which variables are important.
 
 I also decided to use a Bayesian approach because it reduces the risk of overfitting at the expense of increasing the risk of underfitting.
 Since underfitting can be solved much easier, by increasing the size of the model for example, it made the training process much easier.
@@ -504,6 +506,7 @@ Since underfitting can be solved much easier, by increasing the size of the mode
 \label{fig:fitted-distributions}
 \end{figure}
 When predicting the values for each regression-based variable, rather than predicting the probability for each value independently, it is better to use a distribution to predict the probabilities for all values.
+I decided to use discrete distributions to model class based variables and use continuous distributions to model regression based variables.
 To decide which distribution fits each variable best, I used \emph{method of moments} to fit each potential distribution to all observed values of the variable.
 Then I used \emph{goodness of fit} to decide which of the potential distributions is best.
 \paragraph{Method of Moments}
@@ -516,11 +519,12 @@ k= \mu^2/\sigma^2
 \theta = \sigma^2/\mu
 \end{equation*}
 \paragraph{Goodness of fit}
-To estimate how well the distribution fits the data use chi-squared test can be used, which measures the sum of differences between observed and expected outcome frequencies:
+To estimate how well the distribution fits the data, I used chi-squared test, which measures the sum of differences between observed and expected outcome frequencies:
 \begin{equation*}
 \chi^2 = \sum_{i=1}^{n} \frac{(O_i - E_i)^2}{E_i}
 \end{equation*}
 Where $O_i$ is the observed frequency and $E_i$ is the expected frequency.
+Lower $\chi^2$ score indicates a better fit.
 \subsection{Player skills}
 Every game is different and trying to pick specific set of skills for each one, would not be practical.
 Therefore, I decided to make an assumption that players skill in a game can be described by $n$ real numbers.
@@ -575,6 +579,7 @@ I decided to use neural networks in my system, therefore I had to learn basic th
 Neural networks are usually made up of three types of layers: input, hidden and output.
 The size of the input and output layer are determined by the data being processed, deciding on the size of hidden layers is more difficult.
 If the hidden layers are too small under-fitting can occur, similarly if the hidden layers are too big or there too many of them over-fitting can occur.
+I could not find any concrete method of determining optimal size of each layer, therefore I decided to do it through trial and error.
 \paragraph{Perceptron}
 Each layer of a NN is composed of a number of perceptrons.
 Perceptron is a simple linear classifier which is can be described by the following equation:
@@ -586,14 +591,14 @@ Where $y$ is the output, $\sigma()$ is the activation function, $\bs{w}$ a vecto
 These can be combined to form a layer of a neural network, where all perceptrons accept the same input.
 The equation for a layer can be written as:
 \begin{equation*}
-\bs{y} = \sigma(\bs{W}\bs{x}+\bs{b})
+\bs{y} = \bs{\sigma}(\bs{W}\bs{x}+\bs{b})
 \end{equation*}
-where $\bs{W}$ is a matrix of weights.
+where $\bs{W}$ is a matrix of weights and $\bs{\sigma}$ is an element-wise activation function.
 
 \paragraph{Types of activation function}
 There are several types of activation function that can be used in neural networks, I considered the following:
 \begin{description}[labelwidth=\widthof{\bfseries Rectified Linear Unit (ReLU) }]
-\item[Identity] $\sigma(x) = x$
+\item[Identity/Linear] $\sigma(x) = x$
 \item[Rectified Linear Unit (ReLU)] $\sigma(x) = \max(x,0)$
 \item[Softplus] $\sigma(x) = \ln(1+e^x)$
 \item[TanH] $\sigma(x) = \tanh(x)$
@@ -652,7 +657,7 @@ The naive approach is to have only one neural network which takes player skill e
 There are several problems with such system:
 \begin{itemize}
 \item As the size of input grows, so does the size of the neural network required to accurately process them.
-This leads to massive neural network which takes a long time to process data and therefore quite inefficient.
+This leads to massive neural network which takes a long time to process data and therefore is quite inefficient.
 \item As the size of the neural network grows, the number of examples required to train it also increases.
 Although I had quite a large data-set, most successful approaches use millions or even tens of millions of data-points.
 Therefore, I judged that my dataset was not large enough to properly train such a big network.
@@ -676,8 +681,8 @@ Unfortunately I did not have enough time to solve these problems properly.
 Instead, I decided to use the technique called \emph{coordinate descent}, to optimise the models alternatively.
 \paragraph{Coordinate descent}
 When there are multiple parameters to optimise, instead of optimising them at the same time they can be optimise alternatively.
-Each parameter is optimised until it reached a stable value, then the next parameter is optimised.
-Once each parameter is optimised, loop back and start again from the first one.
+Each set of parameters is optimised until it reached a stable value, then the next parameter set is optimised.
+Once each set is optimised, the cycle loops back and starts at the first one.
 This cycle is repeated until all parameters reach sufficiently stable values across multiple cycles.
 
 \subsection{Prediction model}
@@ -723,7 +728,7 @@ This cycle is repeated until all parameters reach sufficiently stable values acr
 \label{fig:four-player-model}
 \end{figure}
 There are four variables in this model: $\bs{x},\bs{y},\bs{t},\bs{p}$.
-To make predictions we would like to calculate $P(\bs{x},\bs{p})$ and $P(\bs{y},\bs{p})$.
+To make predictions $P(\bs{x},\bs{p})$ and $P(\bs{y},\bs{p})$ have to be calculated.
 As was said above, calculating these probabilities directly is expensive, by expressing them using the terms in the model, redundant links can be removed greatly simplifying the computation.
 First the conditionals probabilities are expressed according to model structure:
 \begin{equation*}
@@ -733,6 +738,7 @@ Using product rule the joint probabilities are expanded into several conditional
 \begin{equation*}
 P(\bs{x}_i,\bs{t},\bs{p}) = P(\bs{x}_i\mid\bs{t},\bs{p})P(\bs{t}\mid\bs{p})P(\bs{p})
 \end{equation*}
+Where the prior of $P(\bs{p})$ is the prior probability of $\bs{p}$ and is defined as player skills.
 Using the assumption that player results only depend on the skills of that player and team skills, most of the players can be integrated out, leaving:
 \begin{equation*}
 P(\bs{x}_i\mid\bs{t},\bs{p}) = P(\bs{x}_i\mid\bs{t},\bs{p}_i)
@@ -743,21 +749,22 @@ P(\bs{x}_i,\bs{t},\bs{p}) = P(\bs{x}_i\mid\bs{t},\bs{p}_i)P(\bs{t}\mid\bs{p})P(\
 P(\bs{y},\bs{t},\bs{p}) = P(\bs{y}\mid\bs{t})P(\bs{t}\mid\bs{p})P(\bs{p})
 \label{eq:split-conditionals}
 \end{equation}
-Which is now expressed in terms of conditional probabilities we can calculate and priors which we know.
+Which is now expressed in terms of conditional probabilities which can be calculated using neural networks and priors which are known.
 
-The skills of each player represent the prior on their performances.
+The skills of each player represent the priors of their performances.
 Each player starts with their skill represented by $n$ standard Gaussians.
 After each match, the parameters of those Gaussians are adjusted, such that for the next match the priors are different.
 
 \paragraph{Neural Networks}
 Conditional probabilities such as $P(\bs{x}_i\mid\bs{t},\bs{p}_i)$ are specific to every game and are most likely very complex.
-In such cases I use machine learning techniques to approximate there probabilities, since this is a probability of a vector given other vectors, neural networks are the perfect candidate to use.
-All of the variables in the model are defined using distributions, therefore neural networks must output the parameters of required distribution.
+In such cases I use neural networks to approximate these probabilities.
+Since these are probabilities of a vector given other vectors, neural networks are the perfect candidate to use.
+All of the variables in the model are stored as distributions, therefore neural networks must output the parameters of required distribution.
 For example, for gamma distribution:
 \begin{equation*}
 P(\bs{x}_i \mid\bs{t},\bs{p}_i)=\text{gamma}(\bs{x}_i;\bs{k_\gamma}(\bs{t},\bs{p}_i), \bs{\theta_\gamma}(\bs{t},\bs{p}_i))
 \end{equation*}
-Where parameters $\bs{k_\gamma}$ and $\bs{\theta_\gamma}$ are outputs of a neural network with inputs $\bs{p}$ and $\bs{t}$ parametrised by $\bs{\gamma}$.
+Where parameters $\bs{k_\gamma}$ and $\bs{\theta_\gamma}$ are outputs of a neural network with inputs $\bs{t}$ and $\bs{p}_i$ parametrised by $\bs{\gamma}$.
 
 \subsection{Inferring player performance}
 Player performance is a latent variable, therefore there are no values available to train a neural network.
@@ -775,12 +782,13 @@ P(\bs{t},\bs{x})=\int P(\bs{p},\bs{t},\bs{x})\ d\bs{p}
 That would require to do a sum over all possible weights in all of the neural networks, which is intractable. 
 
 \paragraph{Variational Methods}
-Using variational inference, the conditional probability $P(\bs{p}\mid\bs{t},\bs{x})$ can be approximated with a tractable distribution $q_{\bs{\theta}}(\bs{p}\mid\bs{t},\bs{x})$ with free parameters $\bs{\theta}$ that are close in KL-divergence to the exact posterior.
+Probability ${P(\bs{p}\mid\bs{t},\bs{x})}$ have to be calculated to properly infer player skills, to do that variational inference can be used.
+Using variational inference, the conditional probability ${P(\bs{p}\mid\bs{t},\bs{x})}$ can be approximated with a tractable distribution $q_{\bs{\theta}}(\bs{p}\mid\bs{t},\bs{x})$ with free parameters $\bs{\theta}$ that are close in KL-divergence to the exact posterior.
 Therefore the KL-divergence has to be optimised, which is equivalent to maximising the evidence lower bound of the objective function (ELBO):
 \begin{equation*}
 \mathbb{E}_{q(\bs{p}\mid\bs{t},\bs{x})}\left[\frac{P(\bs{p},\bs{t},\bs{x})}{q_{\bs{\theta}}(\bs{p}\mid\bs{t},\bs{x})}\right]
 \end{equation*}
-If $q_{\bs{\theta}}(\bs{p}\mid\bs{t},\bs{x})$ is constructed such that it can be sampled from using Monte Carlo, then the integral from equation \ref{eq:performance-integral} can be approximated by a sum:
+If $q_{\bs{\theta}}(\bs{p}\mid\bs{t},\bs{x})$ is constructed such that it can be sampled from, using Monte Carlo, then the integral from equation \ref{eq:performance-integral} can be approximated by a sum:
 \begin{equation*}
 \int P(\bs{p},\bs{t},\bs{x})\ d\bs{p} \approx \frac{1}{k}\sum\limits_{k=1}^{K}\frac{P(\bs{p}^k,\bs{t},\bs{x})}{q_{\bs{\theta}}(\bs{p}^k\mid\bs{t},\bs{x})} \qquad k=1,\dots,K
 \end{equation*}
@@ -881,7 +889,7 @@ To train a neural network a loss function is required.
 All of the outputs of conditional probabilities are probability distribution.
 Therefore, for continuous variables, probability density function (pdf) of their distribution can be used as the loss function.
 Similarly, for discrete variables, probability mass function (pmf), can be used as the loss funciton.
-The higher the pdf/pmf, the better the estimate, but loss function is minimised, therefore we need to negate the pdf/pmf to define loss.
+The higher the pdf/pmf, the better the estimate, but loss function is minimised, therefore the pdf/pmf has to be negated to define loss.
 For example a loss function for a Gaussian distribution would be:
 \begin{equation}
 \mathcal{L}(x,\mu,\sigma) = -\frac{1}{\sqrt{2\sigma^2\pi}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}
@@ -890,22 +898,22 @@ For example a loss function for a Gaussian distribution would be:
 where $x$ is the desired value and $\mu$ \& $\sigma$ are estimated parameters.
 
 \paragraph{Optimising loss function}
-The loss function is defined across the whole system, therefore we need to multiply the pdfs of all the distributions.
+The loss function is defined across the whole system, therefore  pdfs of all the distributions have to be multiplied.
 Multiplication is problematic due to two problems:
 \begin{itemize}
 \item It is computationally expensive
 \item Multiplying small probabilities can lead to underflow, which will mean that the final probability might be equal to zero.
 \end{itemize}
-The log of the loss function is taken, it turns products into sums thereby reducing required computation and reduces the range of exponent preventing overflow and underflow:
+To solve them, the log of the loss function is taken, it turns products into sums thereby reducing required computation and reduces the range of exponent preventing overflow and underflow:
 \begin{equation*}
 \mathcal{L} = \log\left(\prod_i p_i(x)\right) = \sum_i \log(p_i(x))
 \end{equation*}
-Since all probabilities are positive log of them is always defined, log is also a monotonically increasing function which means that decreasing log also decreases the function.
+Since all probabilities are positive, log of them is always defined, log is also a monotonically increasing function which means that decreasing log also decreases the function.
 
 Taking log of the samples produced by the variational methods also reduces the variance of samples, which greatly decreases the number of samples required for approximation.
 In my case I found that variance of samples is small enough that only one sample was required during training.
 
-Computing the pdf itself also poses a problem, since potentially very small and very large values are multiplied together the pdf itself can underflow or overflow.
+Computing the pdf/pmf itself also poses a problem, since potentially very small and very large values are multiplied together the pdf itself can underflow or overflow.
 To prevent those problems, the log in the loss function can be pushed further in, e.g. Gaussian from equation \ref{eq:gaussian-loss} becomes:
 \begin{equation*}
 \mathcal{L}(x,\mu,\sigma) = \frac{\log(2)+\log(\pi)}{2}+\log(\sigma)+\frac{(x-\mu)^2}{2\sigma^2}
@@ -933,7 +941,7 @@ Therefore final equation to be optimised for prediction model was:
 This way, all neural networks are optimised at the same time.
 The loss equation for skill update model can be constructed similarly.
 \paragraph{Restricting the range of the output}
-Some of the parameters have to fall within certain range, but the neural output produced by a node in a neural network is usually not bound to any range.
+Some of the parameters have to fall within certain range, but the output produced by a node in a neural network is usually not bound to any range.
 This can be solved by using an appropriate activation function on the final layer of the neural network.
 \emph{ReLU} is an obvious choice for enforcing positive values, but it is problematic in that the optimisation function may not properly adjust the weights of the NN.
 Instead, I decided to use \emph{SoftPlus} activation function.
@@ -959,6 +967,7 @@ In addition, the strategies players employ evolve through time and different ski
 If the system is trained on the whole history of matches, it is optimised to predict results across the whole time-frame, but most of the time only predicting future events makes sense.
 Therefore, to improve the accuracy of the system only the most recent matches are used for training, in which players employ current strategies.
 Although, there is a trade-off: the smaller the time-frame the fewer matches are available for analysis.
+Performance of the system with different time-frames can be seen in figure \ref{fig:time-variance}.
 
 \section{Summary}
 In this chapter the structure and design of the main system was introduced and explained.
@@ -975,6 +984,7 @@ In this chapter I also discuss how validation results can be used to optimise th
 Once neural networks have been trained, matches have to be processed in chronological order to update the player skills.
 To make evaluation quicker a dictionary can be created which contains match id as keys and skills of the players taking part in that match.
 Player skills have to be calculated before processing the match and updating them, to accurately reflect real world scenario.
+
 \section{Train/Validation/Test split}
 One of the most important rules when evaluating machine learning systems is that the algorithm must be tested on previously unseen data.
 Therefore, right at the start the data can be split into two parts: \emph{train/validation} and \emph{test}.
@@ -1022,48 +1032,6 @@ Making the size of the test part too small can lead to statistically insignifica
 On the other hand, making the size of training data too small can lead to under-fitting for the model.
 I decided to use standard 80:20 train/test split using the Pareto principle.
 
-\section{Hyper-parameter selection}
-\begin{figure}[ht]
-\centering
-\includegraphics[scale=0.5]{hyper-parameter-search}
-\caption{Hyper-parameter search}
-\note{As can be seen, increasing the size of player skills has much bigger effect than changing size of team skills.
-\textbf{N.B.} Poor performance with small player skills is not necessarily because the system cannot predict well, but rather because it frequently cannot model the data well, which leads to model only learning the mean.
-}
-\label{fig:hyper-parameter-search}
-\end{figure}
-The designed model includes three hyper-parameters which have to be adjusted for each game\footnote{There are extra hyper-parameters such as optimisation rate, which are not specific to any game. 
-All of the hyper-parameters which I considered are listed in appendix  \ref{hypeparameter-list}.}.
-\begin{enumerate}
-\item Size of the vector representing player skills.
-\item Size of the vector representing team skills.
-\item Size and structure of each neural network.
-\end{enumerate}
-They are ranked in order of importance, adjusting the first should one give the most accuracy increase, but also increase required resources the most.
-
-As can be seen in figure \ref{fig:hyper-parameter-search} the accuracy of the system is mostly dependent on the size of vectors used to represent player skills.
-Increasing the size of team skills does not have such a large effect.
-I have found that the system performs best on my dataset when the size of team skills is between half and twice the size of player skills.
-
-Another thing to keep in mind is that if the size of player skills is too small, the system may fail to learn the patterns present in the data, which will lead to it predicting the mean.
-With my dataset the system failed about two thirds of the time when the size of player skills was equal to one.
-This failure rate reduced to about a third when the size was increased to two and was negligible with size of three and greater.
-
-\begin{figure}[ht]
-\centering
-\includegraphics[scale=0.5]{learning-rate}
-\caption{Learning rate comparison}
-\label{fig:learning-rate}
-\end{figure}
-\paragraph{Learning rate selection}
-I have used Adam optimiser to train the neural networks.
-I have found that using a learning rate less than 5e-4 may lead to system failing to learn the data, learning rates greater than that all performed similarly well.
-
-The only important observation is that since I am using stochastic gradient descent, the system tends to oscillate around the optimum.
-The size of such oscillations is determined by the learning rate, higher learning rate leads to bigger oscillations.
-Therefore selecting a smaller learning rate usually produces slightly better results, but takes longer to train, although the benefit is not very big.
-This can be seen on figure \ref{fig:learning-rate}, which plots five run average of each learning rate.
-
 \section{Performance Evaluation}
 The system is designed such there is as little coupling as possible between the two models.
 This allowed me to work on each model independently and also made evaluation simpler by allowing me to evaluate both models separately from each other.
@@ -1110,6 +1078,49 @@ If the result is worse, load back the state of the system from last validation a
 The system is tested and validated by running the prediction model using the player skill estimates from appropriate time.
 Since the system uses cross-validation, steps one, two and three are performed $k$ times, once for each fold of $k$-fold cross-validation.
 The validation result in step four is the mean of cross-validation results.
+
+\section{Hyper-parameter selection}
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{hyper-parameter-search}
+\caption{Hyper-parameter search}
+\note{As can be seen, increasing the size of player skills has much bigger effect than changing size of team skills.
+\textbf{N.B.} Poor performance with small player skills is not necessarily because the system cannot predict well, but rather because it frequently cannot model the data well, which leads to model only learning the mean.
+}
+\label{fig:hyper-parameter-search}
+\end{figure}
+The designed model includes three hyper-parameters which have to be adjusted for each game\footnote{There are extra hyper-parameters such as optimisation rate, which are not specific to any game. 
+All of the hyper-parameters which I considered are listed in appendix  \ref{hypeparameter-list}.}.
+\begin{enumerate}
+\item Size of the vector representing player skills.
+\item Size of the vector representing team skills.
+\item Size and structure of each neural network.
+\end{enumerate}
+They are ranked in order of importance, adjusting the first should one give the most accuracy increase, but also increase required resources the most.
+
+As can be seen in figure \ref{fig:hyper-parameter-search} the accuracy of the system is mostly dependent on the size of vectors used to represent player skills.
+Increasing the size of team skills does not have such a large effect.
+I have found that the system performs best on my dataset when the size of team skills is between half and twice the size of player skills.
+
+Another thing to keep in mind is that if the size of player skills is too small, the system may fail to learn the patterns present in the data, which will lead to it predicting the mean.
+With my dataset the system failed about two thirds of the time when the size of player skills was equal to one.
+This failure rate reduced to about a third when the size was increased to two and was negligible with size of three and greater.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[scale=0.5]{learning-rate}
+\caption{Learning rate comparison}
+\label{fig:learning-rate}
+\end{figure}
+\paragraph{Learning rate selection}
+I have used Adam optimiser to train the neural networks.
+I have found that using a learning rate less than 5e-4 may lead to system failing to learn the data, learning rates greater than that all performed similarly well.
+
+The only important observation is that since I am using stochastic gradient descent, the system tends to oscillate around the optimum.
+The size of such oscillations is determined by the learning rate, higher learning rate leads to bigger oscillations.
+Therefore selecting a smaller learning rate usually produces slightly better results, but takes longer to train, although the benefit is not very big.
+This can be seen on figure \ref{fig:learning-rate}, which plots five run average of each learning rate.
+
 
 \section{Results}
 \subsection{Requirements Satisfaction}
@@ -1168,6 +1179,9 @@ As was expected, different variables were predicted with different levels of suc
 The results of predicting the eight main variables\footnote{The explanation of what each variables signifies in game can be found at the end of project proposal in appendix \ref{proposal}} can be seen in figure \ref{tb:results}. 
 Unfortunately, the accuracy requirement has only been achieved on one variable, but three more variables have shown quite good results as well.
 
+\emph{GPM} and \emph{XPM} stand for 'gold per minute' and 'experience per minute', which are adjusted for game duration, other variables are not.
+The dataset I used did not include duration information, therefore the system could not learn or predict how long each match would be.
+Once duration results are included in the training data, I believe that accuracy of other variables should increase.
 \subsection{Result validity}
 To check the validity of my results I will use \emph{one-tailed}, \emph{one-sample} T-test.
 I assume that $R^2$ values produced are normally distributed.
@@ -1193,8 +1207,8 @@ t = \frac{\bar{x}-\mu}{s/\sqrt{n}} = \frac{0.5099-0.5}{0.0079/\sqrt{10}} = 3.96
 \note{Red points represent matches when Radiant (horizontal axis) team won, while green points represent matches when Dire (vertical axis) team won.}
 \label{fig:winrate}
 \end{figure}
-There do not exist any systems which predict player results in the game, the closest thing that I can use to compare are the rating systems.
-TrueSkill is one of the most recent open such systems, I have already used parts of it in my prototype, therefore comparing my system to it required little effort.
+I could not find any systems which predict player results in the game, the closest thing that I can use to compare are the rating systems.
+TrueSkill is one of the most recent such systems, I have already used parts of it in my prototype, therefore comparing my system to it required little effort.
 
 TrueSkill library does not directly contain the functionality to predict the outcome of the game, only the probability of a draw.
 To make this comparison I made a simple assumption: if the A team's skill calculated by TrueSkill was greater than team B' skill, I assumed that TrueSkill expected team A to win more when playing against team B.
@@ -1214,10 +1228,10 @@ The result was checked using a hypothesis test.
 \section{Summary of Achievements}
 The project has seen reasonable level of success.
 All five requirements have been satisfied.
-The corrected success criteria was achieved on one variable and three other variables were predicted sufficiently well.
+The corrected success criteria was achieved on one variable and three other variables were predicted quite well.
 
 The project has shown that using simple aggregated player statistics is not sufficient to accurately predict player results, as the skill of most players changes with time.
-By creating a graphical model which can track the skills of the players through time prediction accuracy has been greatly increased.
+By creating a graphical model which can track the skills of the players through time, prediction accuracy has been greatly increased.
 The graphical model operates on $n$ dimensional vectors and manually determining correct relationships between each value in the vectors was considered impractical.
 Instead, neural networks were used to learn such relationships from available data.
 
