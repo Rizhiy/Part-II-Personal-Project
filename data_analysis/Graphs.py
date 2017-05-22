@@ -116,7 +116,9 @@ def prediction_hist(stat: Enum, regr, dataset):
     density._compute_covariance()
     raw_stat_hist(stat)
     plt.plot(xs, density(xs), label="Predicted values")
-    plt.legend(prop={'size': 20})
+    plt.xlabel(r"Variable value")
+    plt.ylabel(r"Frequency")
+    plt.legend()
     plt.gca().axes.get_yaxis().set_ticks([])
     plt.draw()
 
