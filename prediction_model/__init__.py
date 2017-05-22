@@ -67,4 +67,7 @@ SESSION = tf.Session()
 
 K.set_learning_phase(True)
 
+LOSS_MULTIPLIER = [1] * PLAYER_RESULT_DIM
+LOSS_MULTIPLIER[0] = 10
+
 print("Initialisation finished")

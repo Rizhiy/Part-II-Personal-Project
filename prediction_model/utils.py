@@ -11,7 +11,7 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG, PLAYER_SKILLS_MU
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG, PLAYER_SKILLS_MU, LOSS_MULTIPLIER
 
 
 class Stats(Enum):
@@ -55,6 +55,7 @@ def log_bernoulli(y, p):
 
 def log_gamma(x, k, theta):
     error = (k - 1) * min_log(x) - (tf.lgamma(k) + k * min_log(theta) + x / theta)
+    error = LOSS_MULTIPLIER * error
     return tf.reduce_sum(error, 1)
 
 
@@ -306,7 +307,7 @@ def update_player_skills(player_id: int, target_ids: list, skills: list, skills_
 
 def get_skill(player_id: int, match_id: int, average: bool = False):
     if player_id not in PLAYER_GAMES:
-        if DEBUG > 0:
+        if DEBUG > 2:
             print("Player not found: {}".format(player_id), file=sys.stderr)
         if average:
             skill = DEFAULT_PLAYER_SKILL[int(len(DEFAULT_PLAYER_SKILL) / 2):]
@@ -362,6 +363,23 @@ def split_list(match_list: list, ratio=0.8):
     test.sort()
     train.sort()
     return train, test
+
+
+def split_list_2(match_list: list, ratio: float = 0.8):
+    match_list = copy.deepcopy(match_list)
+    num = int((1 - ratio) * len(match_list))
+    random.shuffle(match_list)
+    test = match_list[:num]
+    train = match_list[num:]
+    train_size = int(len(test) / 2)
+    validation = test[:train_size]
+    test = list(set(test) - set(validation))
+    test = test[len(test) % BATCH_SIZE:]
+    validation = validation[len(validation) % BATCH_SIZE:]
+    train = train[len(train) % BATCH_SIZE:]
+    test.sort()
+    train.sort()
+    return train, validation, test
 
 
 def create_validation_sets(match_list: list, fold: int = 10):
