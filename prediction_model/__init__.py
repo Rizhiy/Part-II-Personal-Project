@@ -1,9 +1,25 @@
 import json
 import pprint
+from enum import Enum
 
 import numpy as np
 import tensorflow as tf
 from keras.layers.core import K
+
+class Stats(Enum):
+    KILLS = "kills"
+    DEATHS = "deaths"
+    ASSISTS = "assists"
+    LEVEL = "level"
+    GPM = "gold_per_min"
+    XPM = "xp_per_min"
+    CREEPS = "last_hits"
+    DENIES = "denies"
+    # Those three values are missing from first half of the dataset,
+    # TOWER_DMG = "tower_damage"
+    # HERO_DMG = "hero_damage"
+    # HEALING = "hero_healing"
+
 
 # ids of some experienced players
 DENDI_ID = 70388657
@@ -19,6 +35,16 @@ TI_6_LAST_GAME_ID = 2569610900
 TI_5_LAST_GAME_ID = 1697818230
 MANILA_MAJOR_LAST_GAME_ID = 2430984806
 BOSTON_MAJOR_LAST_GAME_ID = 2837037509
+TEST_TEAM = [{"p_id": DENDI_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": DENDI_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": PUPPEY_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": S4_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": EE_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": MISERY_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": MIRACLE_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": RESOLUTION_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": FEAR_ID, "m_id": TI_6_LAST_GAME_ID},
+             {"p_id": S4_ID, "m_id": TI_6_LAST_GAME_ID}, ]
 
 # Settings for the model
 BATCH_SIZE = 128
@@ -68,6 +94,12 @@ SESSION = tf.Session()
 K.set_learning_phase(True)
 
 LOSS_MULTIPLIER = [1] * PLAYER_RESULT_DIM
-LOSS_MULTIPLIER[0] = 10
+# LOSS_MULTIPLIER[0] = 10
+
+VARIABLE_ORDER = [Stats.GPM, Stats.XPM, Stats.CREEPS, Stats.DENIES, Stats.KILLS, Stats.DEATHS, Stats.ASSISTS, Stats.LEVEL]
+
+SCALER = {}
 
 print("Initialisation finished")
+
+

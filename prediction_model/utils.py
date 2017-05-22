@@ -1,8 +1,8 @@
 import copy
 import random
+import re
 import sys
 from bisect import bisect
-from enum import Enum
 
 import keras
 import numpy as np
@@ -11,22 +11,8 @@ from keras.layers import Dense, Dropout, warnings
 from sklearn.preprocessing import MinMaxScaler
 
 from prediction_model import PLAYERS_PER_TEAM, PLAYER_SKILLS, MATCHES, MATCH_LIST, PLAYER_PERFORMANCES, \
-    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG, PLAYER_SKILLS_MU, LOSS_MULTIPLIER
-
-
-class Stats(Enum):
-    KILLS = "kills"
-    DEATHS = "deaths"
-    ASSISTS = "assists"
-    LEVEL = "level"
-    GPM = "gold_per_min"
-    XPM = "xp_per_min"
-    CREEPS = "last_hits"
-    DENIES = "denies"
-    # Those three values are missing from first half of the dataset,
-    # TOWER_DMG = "tower_damage"
-    # HERO_DMG = "hero_damage"
-    # HEALING = "hero_healing"
+    BATCH_SIZE, DEFAULT_PLAYER_SKILL, PLAYER_GAMES, GAMES_TO_CONSIDER, DEBUG, PLAYER_SKILLS_MU, LOSS_MULTIPLIER, \
+    VARIABLE_ORDER, SCALER
 
 
 def min_log(tensor):
@@ -141,10 +127,9 @@ def get_match_arrays(match_id):
     player_ids = []
     player_results = []
     for idx, player_stat in enumerate(match_stats["players"]):
-        player_result = [player_stat[Stats.GPM.value], player_stat[Stats.XPM.value],
-                         player_stat[Stats.CREEPS.value], player_stat[Stats.DENIES.value],
-                         player_stat[Stats.KILLS.value], player_stat[Stats.DEATHS.value],
-                         player_stat[Stats.ASSISTS.value], player_stat[Stats.LEVEL.value]]
+        player_result = []
+        for stat in VARIABLE_ORDER:
+            player_result.append(player_stat[stat.value])
         player_results.append(player_result)
         player_ids.append(player_stat["account_id"])
         if idx < PLAYERS_PER_TEAM:
@@ -187,7 +172,6 @@ def get_batch(seed, batch_size):
 DATASET = {"player_results": {},
            "team_results": {}}
 
-
 def create_data_set():
     """
     Standardise player results
@@ -205,13 +189,13 @@ def create_data_set():
     lower_clip = np.percentile(results, 1, 0)
     higher_clip = np.percentile(results, 99, 0)
     results = np.clip(results, lower_clip, higher_clip)
-    scalar = MinMaxScaler(feature_range=(0, 1))
-    scalar.fit(results)
+    SCALER["min_max"] = MinMaxScaler(feature_range=(0, 1))
+    SCALER["min_max"].fit(results)
     # temp fix, not fixing since not gonna use this in the future
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     for match_id in DATASET["player_results"]:
         for idx, stats in enumerate(DATASET["player_results"][match_id]):
-            DATASET["player_results"][match_id][idx] = scalar.transform(np.clip(stats, lower_clip, higher_clip))
+            DATASET["player_results"][match_id][idx] = SCALER["min_max"].transform(np.clip(stats, lower_clip, higher_clip))
 
 
 def get_new_batch(seed, match_list, num_of_batches):
@@ -244,7 +228,7 @@ def get_test_batch(seed, test_list):
         batch["match_ids"].append(match_id)
         skill_set = []
         for player_id in get_player_ids(match_id):
-            skill_set.append(get_skill(player_id, match_id))
+            skill_set.append(get_skill(player_id, match_id, True))
         batch["player_skills"].append(skill_set)
     return batch
 
@@ -412,3 +396,36 @@ def reset_stats():
             skills_mu.append(DEFAULT_PLAYER_SKILL[:int(len(DEFAULT_PLAYER_SKILL) / 2)])
         PLAYER_SKILLS[match_id] = skills
         PLAYER_SKILLS_MU[match_id] = skills_mu
+
+
+def split_list_3(match_list, min_test_len):
+    split_ratio = 1.0
+    while True:
+        split_ratio *= 0.99
+        train_list, validation_list, test_list = split_list_2(match_list, split_ratio)
+        if len(validation_list) > min_test_len and len(test_list) > min_test_len:
+            break
+    return train_list, validation_list, test_list
+
+
+def tex_escape(text):
+    """
+        :param text: a plain text message
+        :return: the message escaped to appear correctly in LaTeX
+    """
+    conv = {
+        '&': r'\&',
+        '%': r'\%',
+        '$': r'\$',
+        '#': r'\#',
+        '_': r'\_',
+        '{': r'\{',
+        '}': r'\}',
+        '~': r'\textasciitilde{}',
+        '^': r'\^{}',
+        '\\': r'\textbackslash{}',
+        '<': r'\textless',
+        '>': r'\textgreater',
+    }
+    regex = re.compile('|'.join(re.escape(str(key)) for key in sorted(conv.keys(), key=lambda item: - len(item))))
+    return regex.sub(lambda match: conv[match.group()], text)

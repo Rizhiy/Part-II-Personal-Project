@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import gaussian_kde
+from scipy.stats import gaussian_kde, gamma
 
 
 def density_hist(data: list, label=""):
@@ -21,3 +21,14 @@ def density_hist(data: list, label=""):
         density._compute_covariance()
         plt.plot(xs, density(xs), label=label)
     plt.draw()
+
+
+def plot_gamma(k, theta, title="Predicted probability density", value=None, legend=True):
+    x = np.linspace(0, k * theta * 3, 100)
+    plt.title(title)
+    plt.plot(x, gamma.pdf(x, a=k, scale=theta),
+             label=r"Predicted probability density:\\ k={}, $\theta$={}".format(int(k), int(theta)))
+    if value is not None:
+        plt.axvline(x=value, label="Actual value: {}".format(value), color='r')
+    if legend:
+        plt.legend()
