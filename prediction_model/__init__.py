@@ -4,7 +4,9 @@ from enum import Enum
 
 import numpy as np
 import tensorflow as tf
+import matplotlib.pyplot as plt
 from keras.layers.core import K
+
 
 class Stats(Enum):
     KILLS = "kills"
@@ -96,10 +98,15 @@ K.set_learning_phase(True)
 LOSS_MULTIPLIER = [1] * PLAYER_RESULT_DIM
 # LOSS_MULTIPLIER[0] = 10
 
-VARIABLE_ORDER = [Stats.GPM, Stats.XPM, Stats.CREEPS, Stats.DENIES, Stats.KILLS, Stats.DEATHS, Stats.ASSISTS, Stats.LEVEL]
+VARIABLE_ORDER = [Stats.GPM, Stats.XPM, Stats.CREEPS, Stats.DENIES, Stats.KILLS, Stats.DEATHS, Stats.ASSISTS,
+                  Stats.LEVEL]
 
+# Standardiser settings
 SCALER = {}
 
+# pyplot settings
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.rc('font', size=16)
+
 print("Initialisation finished")
-
-

@@ -3,13 +3,12 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
-from keras.layers.core import K
 from scipy.interpolate import spline
 
 from prediction_model import SESSION, MATCH_LIST, RETRAIN, PLAYER_GAMES, BOSTON_MAJOR_LAST_GAME_ID, TI_6_LAST_GAME_ID, \
     DEBUG, PLAYER_PERFORMANCES, PLAYER_SKILLS, FEAR_ID, PLAYER_DIM, TEST_TEAM
 from prediction_model.Graphs import density_hist
-from prediction_model.system import test_system, train_system, draw_predictions
+from prediction_model.system import test_system, train_system, draw_predictions, predict_match
 from prediction_model.utils import create_data_set, create_player_games, get_skill, split_list_3
 
 init = tf.global_variables_initializer()
@@ -30,7 +29,6 @@ if DEBUG > 0:
 create_player_games(train_list)
 
 file_name = "predictions.pkl"
-
 if RETRAIN:
     train_system(train_list, validation_list)
     data = test_system(test_list)
@@ -38,17 +36,20 @@ if RETRAIN:
     pickle.dump(data, open(file_name, "wb"))
 else:
     data = pickle.load(open(file_name, "rb"))
-K.set_learning_phase(False)
-
-plt.rc('text', usetex=True)
-plt.rc('font', family='serif')
-plt.rc('font', size=16)
 
 if DEBUG > 0:
     print("Player skills at Ti 6:")
     print(PLAYER_SKILLS[TI_6_LAST_GAME_ID])
     print("Player performances at Ti 6:")
     print(PLAYER_PERFORMANCES[TI_6_LAST_GAME_ID])
+    predict_match(TI_6_LAST_GAME_ID)
+
+    error = data["error"]
+    result = data["result"]
+    print()
+    print("Error variance:    {}".format(repr(np.var(error, 0))))
+    print("Original variance: {}".format(repr(np.var(result, 0))))
+    print("R^2:               {}".format(repr([1] * 8 - np.var(error, 0) / np.var(result, 0))))
 if DEBUG > 1:
     predicted = np.swapaxes(data["predicted"], 0, 1)
     error = np.swapaxes(data["error"], 0, 1)
@@ -77,13 +78,3 @@ if DEBUG > 2:
     plt.xlabel("Time")
     plt.ylabel("Skill level")
     plt.show()
-
-draw_predictions(TEST_TEAM)
-plt.show()
-
-error = data["error"]
-result = data["result"]
-print()
-print("Error variance:    {}".format(repr(np.var(error, 0))))
-print("Original variance: {}".format(repr(np.var(result, 0))))
-print("R^2:               {}".format(repr([1] * 8 - np.var(error, 0) / np.var(result, 0))))

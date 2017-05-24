@@ -24,11 +24,19 @@ def density_hist(data: list, label=""):
 
 
 def plot_gamma(k, theta, title="Predicted probability density", value=None, legend=True):
-    x = np.linspace(0, k * theta * 3, 100)
+    expected = k * theta
+    if expected < 10:
+        upper_bound = 20
+    elif expected > 100:
+        upper_bound = 800
+    else:
+        upper_bound = 200
+    x = np.linspace(0, upper_bound, 100)
     plt.title(title)
     plt.plot(x, gamma.pdf(x, a=k, scale=theta),
              label=r"Predicted probability density:\\ k={}, $\theta$={}".format(int(k), int(theta)))
     if value is not None:
         plt.axvline(x=value, label="Actual value: {}".format(value), color='r')
+    plt.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
     if legend:
         plt.legend()

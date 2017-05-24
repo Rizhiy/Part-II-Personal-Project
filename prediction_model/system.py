@@ -6,7 +6,8 @@ import numpy as np
 import tensorflow as tf
 from keras.layers.core import K
 
-from prediction_model import SESSION, DEBUG, BATCH_SIZE, PLAYER_GAMES, VARIABLE_ORDER, SCALER
+from prediction_model import SESSION, DEBUG, BATCH_SIZE, PLAYER_GAMES, VARIABLE_ORDER, SCALER, PLAYER_RESULT_DIM, \
+    PLAYERS_PER_TEAM, NUM_OF_TEAMS
 from prediction_model.Graphs import plot_gamma
 from prediction_model.match_processing_model import loss as inference_loss, player_skills, player_results, team_results, \
     player_results_split, player_to_results_param0, player_to_results_param1, player_performance as match_performances, \
@@ -16,7 +17,7 @@ from prediction_model.p_model import predicted_player_result, predicted_player_s
 from prediction_model.skill_update_model import loss as update_loss, post_skill, player_post_skill, player_pre_skill, \
     player_performance, player_next_performance
 from prediction_model.utils import get_new_batch, store_player_performances, get_test_batch, get_skill_batch, \
-    update_player_skills, get_skill, tex_escape
+    update_player_skills, get_skill, tex_escape, get_player_ids, get_match_arrays
 
 test_result = player_results_split[0]
 test2_result = player_to_results_param0[0] * player_to_results_param1[0]
@@ -170,25 +171,40 @@ def predict_results(player_list: list):
     return np.swapaxes(param0, 0, 1)[0], np.swapaxes(param1, 0, 1)[0]
 
 
-def draw_predictions(player_list: list, players: list = None):
+def draw_predictions(player_list: list, players: list = None, results: list = None):
     if players is None:
-        players = [6]
+        players = [0]
+    if results is None:
+        results = [[None] * PLAYER_RESULT_DIM] * PLAYERS_PER_TEAM * NUM_OF_TEAMS
     param0, param1 = predict_results(player_list)
-    for player in players:
+    for i, player in enumerate(players):
         p_info = player_list[player]
-        title = ""
+        result = results[i]
         if type(p_info) == dict:
             title = tex_escape("position: {}, p_id: {}, at m_id: {}".format(player, p_info["p_id"], p_info["m_id"]))
+        else:
+            title = tex_escape(str(p_info))
         fig, axs = plt.subplots(2, 2, figsize=(24, 15))
         fig.suptitle(title, fontsize=16)
-        fig.tight_layout()
-        fig.subplots_adjust(top=0.95)
+        fig.subplots_adjust(top=0.9)
+        # fig.tight_layout()
         ks = param0[player]
         thetas = param1[player]
-        thetas = SCALER["min_max"].inverse_transform(thetas) / ks
+        thetas = SCALER["min_max"].inverse_transform(thetas * ks) / ks
         for idx, k in enumerate(ks):
             if idx > 3:
                 break
             plt.sca(axs[int(idx / 2)][idx % 2])
             theta = thetas[idx]
-            plot_gamma(k, theta, title=tex_escape(VARIABLE_ORDER[idx].value), legend=False)
+            plot_gamma(k, theta, title=tex_escape(VARIABLE_ORDER[idx].value), legend=False, value=result[idx])
+
+
+def predict_match(match_id: int, players: list = None):
+    if players is None:
+        players = [0]
+    player_ids = get_player_ids(match_id)
+    skills = []
+    for idx, player_id in enumerate(player_ids):
+        skills.append(get_skill(player_id, match_id, average=True))
+    results = get_match_arrays(match_id)
+    draw_predictions(skills, players, results["player_results"])
