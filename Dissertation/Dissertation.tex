@@ -8,10 +8,6 @@
 \graphicspath{ {img/} }
 \usepackage{svg}
 
-% Automatically match quotation marks
-\usepackage{csquotes}
-\MakeOuterQuote{"}
-
 % Bibleography
 \usepackage[backend=biber]{biblatex}
 \addbibresource{Dissertation.bib}
@@ -43,13 +39,6 @@
 \usepackage{makecell, array, booktabs}
 \renewcommand\theadfont{\bfseries}
 
-
-% New commands
-\newcommand\college{Clare College}
-\newcommand\mean[1]{\overline{#1}}
-\newcommand\bs[1]{\boldsymbol{#1}}
-\newcommand\note[1]{\vspace*{-0.5\baselineskip}\caption*{#1}}
-
 %Links
 \usepackage{hyperref}
 \hypersetup{
@@ -78,7 +67,17 @@
   \colorbox{\minted@bgcol}{\usebox{\minted@bgbox}}%
   \endtrivlist % close the trivlist
  }
+ 
+ 
+% Automatically match quotation marks
+\usepackage{csquotes}
+\MakeOuterQuote{"}
 
+% New commands
+\newcommand\college{Clare College}
+\newcommand\mean[1]{\overline{#1}}
+\newcommand\bs[1]{\boldsymbol{#1}}
+\newcommand\note[1]{\vspace*{-0.5\baselineskip}\caption*{#1}}
 
 
 \title{Predicting statistical results in competitive computer games}
