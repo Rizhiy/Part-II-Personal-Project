@@ -1,6 +1,5 @@
 import json
 import os.path
-import sys
 import time
 
 import dota2api
