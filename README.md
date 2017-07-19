@@ -1,4 +1,9 @@
-# Part-II-Personal-Project
+# Sports predictor
+
+ This is a Part II project I have done at uni for my disseration.
+ It aims to predict what results different players are gonna get in a match based on their history.
+ More information about the whole process in dissertation itself: `Dissertation/Dissertation.pdf`.
+ In particular, chapter 3 explains the reasoning behind the model.
 
  Code for data collection in is 'match_data_collection'
  
