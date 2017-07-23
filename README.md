@@ -12,4 +12,4 @@
  Code for final system is in 'prediction model'
  
  I did not include match data as it is about 300MB, if you decide to test the system, put raw json files in 'all_matches' and update 'match_stats.json'.
- 
+ Some of the data I used can be found [here](https://drive.google.com/file/d/0B_M9Ypkvw2mhbUhqckRhWFFBMkE/view?usp=sharing).
